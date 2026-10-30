@@ -1,0 +1,1 @@
+import{F as e,W as t,kt as n,sn as r}from"./B42-s5GO.js";import{c as i}from"./Cwau8Je8.js";var a=t({__name:`index`,async setup(t){let a,o;return[a,o]=r(()=>i(`/my-day`,{replace:!0})),await a,o(),(t,r)=>(n(),e(`div`))}});export{a as default};

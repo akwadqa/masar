@@ -1,0 +1,1 @@
+import{F as e,W as t,kt as n,sn as r}from"./B42-s5GO.js";import{c as i,u as a}from"./Cwau8Je8.js";var o=t({__name:`index`,async setup(t){let o,s,c=a();return[o,s]=r(()=>i(`/spaces/${c.params.space}/tasks`,{replace:!0})),await o,s(),(t,r)=>(n(),e(`div`))}});export{o as default};

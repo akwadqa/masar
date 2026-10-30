@@ -1,0 +1,188 @@
+{
+ "actions": [],
+ "autoname": "hash",
+ "creation": "2026-10-28 18:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "batch_name",
+  "start_date",
+  "end_date",
+  "status",
+  "batch_owner",
+  "started_at",
+  "started_by",
+  "finished_at",
+  "finished_by",
+  "finish_carry",
+  "finish_destination",
+  "client_request_id",
+  "start_request_id",
+  "finish_request_id"
+ ],
+ "fields": [
+  {
+   "fieldname": "batch_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Batch",
+   "length": 140,
+   "reqd": 1
+  },
+  {
+   "fieldname": "start_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Start Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "end_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "End Date",
+   "reqd": 1
+  },
+  {
+   "default": "Planned",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Planned\nActive\nFinished",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "batch_owner",
+   "fieldtype": "Link",
+   "label": "Owner",
+   "options": "User",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "started_at",
+   "fieldtype": "Datetime",
+   "label": "Started At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "started_by",
+   "fieldtype": "Link",
+   "label": "Started By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "finished_at",
+   "fieldtype": "Datetime",
+   "label": "Finished At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "finished_by",
+   "fieldtype": "Link",
+   "label": "Finished By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "finish_carry",
+   "fieldtype": "Select",
+   "label": "Unfinished Tasks",
+   "options": "\nUnbatched\nBatch",
+   "read_only": 1
+  },
+  {
+   "fieldname": "finish_destination",
+   "fieldtype": "Link",
+   "label": "Carried To",
+   "options": "Masar Batch",
+   "permlevel": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "client_request_id",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Client Request ID",
+   "length": 64,
+   "permlevel": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "start_request_id",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Start Request ID",
+   "length": 64,
+   "permlevel": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "finish_request_id",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Finish Request ID",
+   "length": 64,
+   "permlevel": 1,
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-10-28 19:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Masar",
+ "name": "Masar Batch",
+ "naming_rule": "Random",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 0,
+   "export": 0,
+   "print": 0,
+   "read": 1,
+   "report": 0,
+   "role": "Masar User",
+   "share": 0,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 0,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 0,
+   "write": 0
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "permlevel": 1,
+   "print": 0,
+   "read": 1,
+   "report": 0,
+   "role": "System Manager",
+   "share": 0,
+   "write": 0
+  }
+ ],
+ "row_format": "Dynamic",
+ "search_fields": "batch_name",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "batch_name",
+ "track_changes": 0
+}

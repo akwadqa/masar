@@ -1,0 +1,312 @@
+{
+ "actions": [],
+ "autoname": "hash",
+ "creation": "2026-10-27 23:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "title",
+  "space",
+  "priority",
+  "due_date",
+  "column_break_main",
+  "status",
+  "overdue_for",
+  "is_completed",
+  "completed_at",
+  "completed_by",
+  "is_important",
+  "is_my_day",
+  "labels",
+  "feature",
+  "target_release",
+  "section_people",
+  "assignees",
+  "task_owner",
+  "section_description",
+  "description",
+  "section_tracking",
+  "remaining_minutes",
+  "has_remaining_estimate",
+  "logged_minutes",
+  "column_break_tracking",
+  "action_count",
+  "action_done_count",
+  "comment_count",
+  "section_system",
+  "sort_order",
+  "client_request_id",
+  "source_task",
+  "source_action"
+ ],
+ "fields": [
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Title",
+   "length": 240,
+   "reqd": 1
+  },
+  {
+   "fieldname": "space",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Space",
+   "options": "Masar Space",
+   "reqd": 1,
+   "search_index": 1,
+   "set_only_once": 1
+  },
+  {
+   "default": "Medium",
+   "fieldname": "priority",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Priority",
+   "options": "Lowest\nLow\nMedium\nHigh\nHighest",
+   "reqd": 1
+  },
+  {
+   "fieldname": "due_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Due Date"
+  },
+  {
+   "fieldname": "column_break_main",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Open",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Open\nWorking\nPending Review\nChanges Required\nOverdue\nClosed\nCompleted\nCancelled",
+   "reqd": 1
+  },
+  {
+   "description": "The due date for which the Task was last set to Overdue automatically.",
+   "fieldname": "overdue_for",
+   "fieldtype": "Date",
+   "label": "Overdue For",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "is_completed",
+   "fieldtype": "Check",
+   "in_standard_filter": 1,
+   "label": "Completed",
+   "read_only": 1,
+   "description": "Derived from the status: Completed, Closed and Cancelled count as finished."
+  },
+  {
+   "fieldname": "completed_at",
+   "fieldtype": "Datetime",
+   "label": "Completed At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "completed_by",
+   "fieldtype": "Link",
+   "label": "Completed By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "is_important",
+   "fieldtype": "Check",
+   "label": "Important"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_my_day",
+   "fieldtype": "Check",
+   "label": "My Day (retired)",
+   "hidden": 1,
+   "read_only": 1,
+   "description": "Retired in client revision 4: My Day is personal (Masar My Day). Kept so no value is lost."
+  },
+  {
+   "fieldname": "labels",
+   "fieldtype": "Table MultiSelect",
+   "label": "Labels",
+   "options": "Masar Task Label"
+  },
+  {
+   "fieldname": "feature",
+   "fieldtype": "Link",
+   "label": "Feature",
+   "options": "Masar Feature",
+   "search_index": 1
+  },
+  {
+   "fieldname": "target_release",
+   "fieldtype": "Link",
+   "label": "Release",
+   "options": "Masar Release",
+   "search_index": 1
+  },
+  {
+   "fieldname": "section_people",
+   "fieldtype": "Section Break",
+   "label": "People"
+  },
+  {
+   "fieldname": "assignees",
+   "fieldtype": "Table",
+   "label": "Assignees",
+   "options": "Masar Task Assignee"
+  },
+  {
+   "description": "Business owner of the task (Frappe 'owner' is the creator).",
+   "fieldname": "task_owner",
+   "fieldtype": "Link",
+   "label": "Task Owner",
+   "options": "User",
+   "search_index": 1
+  },
+  {
+   "fieldname": "section_description",
+   "fieldtype": "Section Break",
+   "label": "Description"
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Markdown Editor",
+   "label": "Description",
+   "ignore_xss_filter": 1
+  },
+  {
+   "fieldname": "section_tracking",
+   "fieldtype": "Section Break",
+   "label": "Tracking"
+  },
+  {
+   "fieldname": "remaining_minutes",
+   "fieldtype": "Int",
+   "label": "Remaining (minutes)",
+   "non_negative": 1
+  },
+  {
+   "description": "Set when someone gave a remaining estimate; remaining_minutes is meaningful only then (0 = nothing left). Int columns cannot be NULL in Frappe (ADR-062).",
+   "fieldname": "has_remaining_estimate",
+   "fieldtype": "Check",
+   "label": "Has Remaining Estimate",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "logged_minutes",
+   "fieldtype": "Int",
+   "label": "Logged (minutes)",
+   "non_negative": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_tracking",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "action_count",
+   "fieldtype": "Int",
+   "label": "Actions",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "action_done_count",
+   "fieldtype": "Int",
+   "label": "Actions Done",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "comment_count",
+   "fieldtype": "Int",
+   "label": "Comments",
+   "read_only": 1
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "section_system",
+   "fieldtype": "Section Break",
+   "label": "System"
+  },
+  {
+   "fieldname": "sort_order",
+   "fieldtype": "Float",
+   "label": "Sort Order",
+   "precision": "6"
+  },
+  {
+   "fieldname": "client_request_id",
+   "fieldtype": "Data",
+   "label": "Client Request ID",
+   "length": 64,
+   "read_only": 1
+  },
+  {
+   "fieldname": "source_task",
+   "fieldtype": "Link",
+   "label": "Promoted From Task",
+   "options": "Masar Task",
+   "read_only": 1
+  },
+  {
+   "fieldname": "source_action",
+   "fieldtype": "Link",
+   "label": "Promoted From Action",
+   "options": "Masar Task Action",
+   "read_only": 1,
+   "unique": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-10-28 22:30:00.000000",
+ "modified_by": "Administrator",
+ "module": "Masar",
+ "name": "Masar Task",
+ "naming_rule": "Random",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 0,
+   "export": 0,
+   "print": 0,
+   "read": 1,
+   "report": 0,
+   "role": "Masar User",
+   "share": 0,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 0,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 0,
+   "write": 0
+  }
+ ],
+ "row_format": "Dynamic",
+ "search_fields": "title",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "title",
+ "track_changes": 0
+}

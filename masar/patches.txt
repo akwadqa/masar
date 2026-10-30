@@ -1,0 +1,7 @@
+[pre_model_sync]
+
+[post_model_sync]
+masar.patches.v7.mark_existing_remaining_estimates
+masar.patches.v8.task_status_and_markdown
+masar.patches.v9.personal_my_day
+masar.patches.v10.space_categories

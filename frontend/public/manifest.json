@@ -1,0 +1,25 @@
+{
+  "id": "/masar/",
+  "name": "Masar",
+  "short_name": "Masar",
+  "description": "Plan, track and deliver your team's work.",
+  "lang": "en",
+  "dir": "ltr",
+  "start_url": "/masar/my-day",
+  "scope": "/masar/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#F7F6FA",
+  "theme_color": "#ffffff",
+  "categories": ["productivity", "business"],
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "My Day", "url": "/masar/my-day", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "All Tasks", "url": "/masar/tasks", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Sprints", "url": "/masar/sprints", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] }
+  ]
+}

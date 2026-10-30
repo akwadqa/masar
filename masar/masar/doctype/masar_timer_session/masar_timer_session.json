@@ -1,0 +1,120 @@
+{
+ "actions": [],
+ "autoname": "hash",
+ "creation": "2026-10-29 09:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "task",
+  "space",
+  "worker",
+  "state",
+  "active_worker",
+  "started_at",
+  "paused_at",
+  "paused_seconds",
+  "ended_at",
+  "time_entry"
+ ],
+ "fields": [
+  {
+   "fieldname": "task",
+   "fieldtype": "Link",
+   "label": "Task",
+   "options": "Masar Task",
+   "reqd": 1,
+   "set_only_once": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "space",
+   "fieldtype": "Link",
+   "label": "Space",
+   "options": "Masar Space",
+   "reqd": 1,
+   "set_only_once": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "worker",
+   "fieldtype": "Link",
+   "label": "Worker",
+   "options": "User",
+   "reqd": 1,
+   "set_only_once": 1,
+   "read_only": 1,
+   "in_list_view": 1,
+   "description": "The employee timing the work: always the user who started it."
+  },
+  {
+   "fieldname": "state",
+   "fieldtype": "Select",
+   "label": "State",
+   "options": "Running\nPaused\nStopped\nDiscarded",
+   "reqd": 1,
+   "default": "Running",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "active_worker",
+   "fieldtype": "Data",
+   "label": "Active Worker",
+   "read_only": 1,
+   "unique": 1,
+   "description": "The worker while Running or Paused, otherwise the session name: one active timer per employee (unique)."
+  },
+  {
+   "fieldname": "started_at",
+   "fieldtype": "Datetime",
+   "label": "Started At",
+   "reqd": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "paused_at",
+   "fieldtype": "Datetime",
+   "label": "Paused At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "paused_seconds",
+   "fieldtype": "Int",
+   "label": "Paused Seconds",
+   "default": "0",
+   "read_only": 1
+  },
+  {
+   "fieldname": "ended_at",
+   "fieldtype": "Datetime",
+   "label": "Ended At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "time_entry",
+   "fieldtype": "Link",
+   "label": "Time Entry",
+   "options": "Masar Time Entry",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-10-29 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Masar",
+ "name": "Masar Timer Session",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 0
+}
