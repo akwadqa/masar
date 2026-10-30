@@ -1,0 +1,159 @@
+{
+ "actions": [],
+ "autoname": "hash",
+ "creation": "2026-10-28 18:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "batch",
+  "task",
+  "space",
+  "current_task",
+  "outcome",
+  "added_at",
+  "added_by",
+  "added_after_start",
+  "removed_at",
+  "removed_by",
+  "completed_at_finish",
+  "carried_from",
+  "carried_to"
+ ],
+ "fields": [
+  {
+   "fieldname": "batch",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Batch",
+   "options": "Masar Batch",
+   "reqd": 1,
+   "set_only_once": 1
+  },
+  {
+   "description": "Cleared if the Task is deleted; the participation record is kept.",
+   "fieldname": "task",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Task",
+   "options": "Masar Task"
+  },
+  {
+   "fieldname": "space",
+   "fieldtype": "Link",
+   "label": "Space",
+   "options": "Masar Space",
+   "read_only": 1,
+   "reqd": 1,
+   "set_only_once": 1
+  },
+  {
+   "description": "Equals the Task while it is in this Planned or Active Batch; otherwise empty. Unique: one current Batch per Task.",
+   "fieldname": "current_task",
+   "fieldtype": "Data",
+   "label": "Current Task",
+   "length": 140,
+   "read_only": 1,
+   "unique": 1
+  },
+  {
+   "default": "Open",
+   "fieldname": "outcome",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Outcome",
+   "options": "Open\nCompleted\nCarried Over\nReturned\nRemoved",
+   "read_only": 1
+  },
+  {
+   "fieldname": "added_at",
+   "fieldtype": "Datetime",
+   "label": "Added At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "added_by",
+   "fieldtype": "Link",
+   "label": "Added By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "added_after_start",
+   "fieldtype": "Check",
+   "label": "Added After Start",
+   "read_only": 1
+  },
+  {
+   "fieldname": "removed_at",
+   "fieldtype": "Datetime",
+   "label": "Removed At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "removed_by",
+   "fieldtype": "Link",
+   "label": "Removed By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "completed_at_finish",
+   "fieldtype": "Check",
+   "label": "Completed At Finish",
+   "read_only": 1
+  },
+  {
+   "fieldname": "carried_from",
+   "fieldtype": "Link",
+   "label": "Carried From",
+   "options": "Masar Batch",
+   "read_only": 1
+  },
+  {
+   "fieldname": "carried_to",
+   "fieldtype": "Link",
+   "label": "Carried To",
+   "options": "Masar Batch",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-10-28 18:30:00.000000",
+ "modified_by": "Administrator",
+ "module": "Masar",
+ "name": "Masar Batch Item",
+ "naming_rule": "Random",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 0,
+   "export": 0,
+   "print": 0,
+   "read": 1,
+   "report": 0,
+   "role": "Masar User",
+   "share": 0,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 0,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 0,
+   "write": 0
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 0
+}

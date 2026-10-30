@@ -1,0 +1,1 @@
+import{F as e,W as t,kt as n}from"./B42-s5GO.js";import"./DJhZ-aky.js";var r=t({__name:`my-work`,setup(t){return(t,r)=>(n(),e(`div`))}});export{r as default};

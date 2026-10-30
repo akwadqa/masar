@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+# Node / Nuxt
+node_modules/
+frontend/.nuxt/
+frontend/.output/
+frontend/dist/
+frontend/test-results/
+frontend/playwright-report/
+# Site data and secrets: never part of this repository
+site_config.json
+common_site_config.json
+.env
+.env.*
+*.sql
+*.sql.gz
+*.log
+*.pem
+*.key
+.DS_Store

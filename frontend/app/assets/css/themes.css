@@ -1,0 +1,287 @@
+/*
+ * Masar design themes (client revision; docs/design/client-revision/design-system.md).
+ * Three selectable themes share one set of semantic token names; components use only those names.
+ *   ink    — Ink & Signal (default): black actions, Signal Blue interaction, neutral greys.
+ *   violet — Violet Workspace: violet interaction, lavender-tinted surfaces.
+ *   teal   — Masar Teal: deep teal interaction, calm stone neutrals.
+ * Each theme defines light values under [data-theme] and dark values under .dark[data-theme].
+ * Meanings never change between themes: success stays green, overdue stays rose, My Day and
+ * Important stay saffron.
+ */
+
+@theme static {
+  /* Brand palettes (Nuxt UI maps the active one to `primary`). */
+  --color-signal-50: #eef8ff; --color-signal-100: #d9eeff; --color-signal-200: #bce2ff; --color-signal-300: #8ed1ff;
+  --color-signal-400: #59b7ff; --color-signal-500: #0091ff; --color-signal-600: #0074db; --color-signal-700: #005db1;
+  --color-signal-800: #034f92; --color-signal-900: #094378; --color-signal-950: #072a4f;
+  --color-iris-50: #f3f1ff; --color-iris-100: #e9e5ff; --color-iris-200: #d5cdff; --color-iris-300: #b6a6ff;
+  --color-iris-400: #9476fd; --color-iris-500: #7a52f7; --color-iris-600: #6647f0; --color-iris-700: #5530d4;
+  --color-iris-800: #4729ad; --color-iris-900: #3c258c; --color-iris-950: #24155f;
+  --color-lagoon-50: #effaf8; --color-lagoon-100: #d6f2ec; --color-lagoon-200: #b0e4d9; --color-lagoon-300: #7dcfbf;
+  --color-lagoon-400: #4ab4a2; --color-lagoon-500: #2a9887; --color-lagoon-600: #1d7a6d; --color-lagoon-700: #0f766e;
+  --color-lagoon-800: #155149; --color-lagoon-900: #14443e; --color-lagoon-950: #052825;
+
+  /* Rubik is the one type family across the system (client revision 2); mono is kept for code only. */
+  --font-rubik: "Rubik", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+/* Semantic token names, exposed to Tailwind utilities (bg-canvas, text-overdue, …). */
+@theme inline {
+  --font-sans: var(--masar-font-body);
+  --font-display: var(--masar-font-display);
+  --font-meta: var(--masar-font-body);
+  --color-canvas: var(--masar-canvas);
+  --color-surface: var(--masar-surface);
+  --color-zebra: var(--masar-zebra);
+  --color-selected: var(--masar-selected);
+  --color-action: var(--masar-action);
+  --color-action-text: var(--masar-action-text);
+  --color-success-tint: var(--masar-success-tint);
+  --color-open: var(--masar-open);
+  --color-open-tint: var(--masar-open-tint);
+  --color-overdue: var(--masar-overdue);
+  --color-overdue-tint: var(--masar-overdue-tint);
+  --color-focus-accent: var(--masar-focus-accent);
+  --color-focus-tint: var(--masar-focus-tint);
+  --color-lane-now: var(--masar-lane-now);
+  --color-lane-next: var(--masar-lane-next);
+  --color-lane-later: var(--masar-lane-later);
+  --color-lane-done: var(--masar-lane-done);
+  --color-status-working: var(--masar-status-working);
+  --color-status-review: var(--masar-status-review);
+  --color-status-changes: var(--masar-status-changes);
+  --color-status-closed: var(--masar-status-closed);
+  --color-status-cancelled: var(--masar-status-cancelled);
+  --color-filter-mine: var(--masar-filter-mine);
+  --color-filter-important: var(--masar-filter-important);
+  --color-filter-release: var(--masar-filter-release);
+  --color-filter-feature: var(--masar-filter-feature);
+  --color-filter-sprint: var(--masar-filter-sprint);
+  --radius-pill: var(--masar-radius-pill);
+  --radius-card: var(--masar-radius-card);
+}
+
+/* ------------------------------------------------------------------ shared defaults (light) */
+:root {
+  --masar-font-body: var(--font-rubik);
+  --masar-font-display: var(--font-rubik);
+  /* Shape is shared by every theme (themes differ in colour only, client revision 3): boxed
+     controls with small, restrained corners. */
+  --masar-radius-pill: 0.25rem;
+  --masar-radius-card: 0.5rem;
+  --ui-radius: 0.25rem;
+  --ui-header-height: 3.5rem;
+
+  --masar-success-tint: #dcfce7;
+  --masar-overdue: #c8104f;
+  --masar-overdue-tint: #fde7ef;
+  --masar-focus-accent: #b45309;
+  --masar-focus-tint: #fef3c7;
+  --ui-text-dimmed: var(--ui-color-neutral-500);
+  /* Darker than before so small success text passes on tinted, elevated boxes (revision 2). */
+  --ui-success: #036645;
+  --ui-warning: #a15c07;
+  --ui-error: #c8104f;
+  --ui-info: #0369a1;
+  /* Task statuses (fixed meaning across themes): Open uses --masar-open, Overdue --masar-overdue,
+     Completed --ui-success. Tints are mixed from these colours in utils/taskStatus.ts classes. */
+  --masar-status-working: #0369a1;
+  --masar-status-review: #6d28d9;
+  --masar-status-changes: #92400e;
+  --masar-status-closed: #475569;
+  --masar-status-cancelled: #4b5563;
+
+  /* Personal avatar colours (client revision 3: soft and light): a pale tint of the person's colour
+     with initials in a deep shade of the same colour (at least 4.5:1). */
+  --masar-avatar-tint: 15%;
+  --masar-avatar-ink-mix: 62%;
+  --masar-avatar-ink-base: #0b1220;
+
+  /* Filter toggle icons (client revision 4): soft colours, the same in every theme, so the gray
+     filter bar does not read as greyscale. Important keeps the saffron of its meaning. */
+  --masar-filter-mine: #0284c7; --masar-filter-important: #d97706; --masar-filter-release: #7c3aed;
+  --masar-filter-feature: #059669; --masar-filter-sprint: #4f46e5;
+
+  /* Space icon colours (fixed meaning across themes; tints come from color-mix in components). */
+  --masar-space-blue: #0074db; --masar-space-violet: #6647f0; --masar-space-teal: #0f766e; --masar-space-green: #15803d;
+  --masar-space-amber: #b45309; --masar-space-rose: #c8104f; --masar-space-sky: #0369a1; --masar-space-slate: #475569;
+}
+
+.dark {
+  --masar-success-tint: color-mix(in oklab, #34d399 16%, transparent);
+  --masar-overdue: #fb7199;
+  --masar-overdue-tint: color-mix(in oklab, #fb7199 16%, transparent);
+  --masar-focus-accent: #fbbf24;
+  --masar-focus-tint: color-mix(in oklab, #fbbf24 15%, transparent);
+  --ui-text-dimmed: var(--ui-color-neutral-400);
+  --ui-success: #34d399;
+  --ui-warning: #fbbf24;
+  --ui-error: #fb7199;
+  --ui-info: #38bdf8;
+  --masar-status-working: #38bdf8;
+  --masar-status-review: #c4b5fd;
+  --masar-status-changes: #fbbf24;
+  --masar-status-closed: #cbd5e1;
+  --masar-status-cancelled: #a1a1aa;
+  --masar-avatar-tint: 22%;
+  --masar-avatar-ink-mix: 100%;
+  --masar-avatar-ink-base: #ffffff;
+  --masar-filter-mine: #38bdf8; --masar-filter-important: #fbbf24; --masar-filter-release: #a78bfa;
+  --masar-filter-feature: #34d399; --masar-filter-sprint: #818cf8;
+  --masar-space-blue: #59b7ff; --masar-space-violet: #a895ff; --masar-space-teal: #4ab4a2; --masar-space-green: #4ade80;
+  --masar-space-amber: #fbbf24; --masar-space-rose: #fb7199; --masar-space-sky: #38bdf8; --masar-space-slate: #94a3b8;
+}
+
+/* ------------------------------------------------------------------ A — Ink & Signal */
+:root, [data-theme="ink"] {
+  --ui-color-primary-50: var(--color-signal-50); --ui-color-primary-100: var(--color-signal-100); --ui-color-primary-200: var(--color-signal-200);
+  --ui-color-primary-300: var(--color-signal-300); --ui-color-primary-400: var(--color-signal-400); --ui-color-primary-500: var(--color-signal-500);
+  --ui-color-primary-600: var(--color-signal-600); --ui-color-primary-700: var(--color-signal-700); --ui-color-primary-800: var(--color-signal-800);
+  --ui-color-primary-900: var(--color-signal-900); --ui-color-primary-950: var(--color-signal-950);
+  --ui-color-neutral-50: #f8f9fa; --ui-color-neutral-100: #eeeeee; --ui-color-neutral-200: #e8e8e8; --ui-color-neutral-300: #d4d4d4;
+  --ui-color-neutral-400: #a3a3a3; --ui-color-neutral-500: #737373; --ui-color-neutral-600: #646464; --ui-color-neutral-700: #404040;
+  --ui-color-neutral-800: #2a2a2a; --ui-color-neutral-900: #202020; --ui-color-neutral-950: #111111;
+  --ui-primary: var(--ui-color-primary-700);
+  --ui-bg: #ffffff;
+  --ui-bg-muted: #f8f9fa;
+  --ui-bg-elevated: #f1f2f4;
+  --ui-border: #e8e8e8;
+  --ui-text-highlighted: #202020;
+  /* Muted text is used for meaningful labels on tinted surfaces: keep it at least 4.5:1 there. */
+  --ui-text-muted: var(--ui-color-neutral-600);
+  --masar-canvas: #ffffff;
+  --masar-surface: #f8f9fa;
+  --masar-zebra: #fbfbfc;
+  --masar-selected: color-mix(in oklab, var(--color-signal-500) 10%, white);
+  --masar-action: #202020;
+  --masar-action-text: #ffffff;
+  --masar-open: var(--color-signal-700);
+  --masar-open-tint: var(--color-signal-50);
+  --masar-lane-now: var(--color-signal-500); --masar-lane-next: var(--color-iris-600); --masar-lane-later: #d97706; --masar-lane-done: #00a86b;
+}
+.dark[data-theme="ink"], .dark:not([data-theme]) {
+  --ui-primary: var(--color-signal-400);
+  --ui-bg: #151517;
+  --ui-bg-muted: #1c1c1f;
+  --ui-bg-elevated: #242428;
+  --ui-bg-accented: #2e2e33;
+  --ui-border: #2a2a2f;
+  --ui-border-muted: #232327;
+  --ui-border-accented: #38383f;
+  --ui-text: #e4e4e7;
+  --ui-text-toned: #d4d4d8;
+  --ui-text-muted: #a1a1aa;
+  --ui-text-highlighted: #fafafa;
+  --masar-canvas: #151517;
+  --masar-surface: #1a1a1d;
+  --masar-zebra: #18181b;
+  --masar-selected: color-mix(in oklab, var(--color-signal-400) 16%, #151517);
+  --masar-action: #fafafa;
+  --masar-action-text: #151517;
+  --masar-open: var(--color-signal-300);
+  --masar-open-tint: color-mix(in oklab, var(--color-signal-400) 16%, transparent);
+  --masar-lane-now: var(--color-signal-400); --masar-lane-next: var(--color-iris-400); --masar-lane-later: #fbbf24; --masar-lane-done: #34d399;
+}
+
+/* ------------------------------------------------------------------ B — Violet Workspace */
+[data-theme="violet"] {
+  --ui-color-primary-50: var(--color-iris-50); --ui-color-primary-100: var(--color-iris-100); --ui-color-primary-200: var(--color-iris-200);
+  --ui-color-primary-300: var(--color-iris-300); --ui-color-primary-400: var(--color-iris-400); --ui-color-primary-500: var(--color-iris-500);
+  --ui-color-primary-600: var(--color-iris-600); --ui-color-primary-700: var(--color-iris-700); --ui-color-primary-800: var(--color-iris-800);
+  --ui-color-primary-900: var(--color-iris-900); --ui-color-primary-950: var(--color-iris-950);
+  --ui-color-neutral-50: #f6f5fb; --ui-color-neutral-100: #ecebf6; --ui-color-neutral-200: #e2e0ee; --ui-color-neutral-300: #cfcbe0;
+  --ui-color-neutral-400: #a29db8; --ui-color-neutral-500: #716c87; --ui-color-neutral-600: #5f5b6e; --ui-color-neutral-700: #423e52;
+  --ui-color-neutral-800: #2c2938; --ui-color-neutral-900: #1d1b26; --ui-color-neutral-950: #12101a;
+  --ui-primary: var(--ui-color-primary-700);
+  --ui-bg: #ffffff;
+  --ui-bg-muted: #f6f5fb;
+  --ui-bg-elevated: #efedf8;
+  --ui-border: #e9e7f2;
+  --ui-text-highlighted: #1d1b26;
+  /* Muted text is used for meaningful labels on tinted surfaces: keep it at least 4.5:1 there. */
+  --ui-text-muted: var(--ui-color-neutral-600);
+  --masar-canvas: #ffffff;
+  --masar-surface: #f6f5fb;
+  --masar-zebra: #fbfaff;
+  --masar-selected: var(--color-iris-50);
+  --masar-action: #1d1b26;
+  --masar-action-text: #ffffff;
+  --masar-open: var(--color-iris-700);
+  --masar-open-tint: var(--color-iris-50);
+  --masar-lane-now: var(--color-iris-600); --masar-lane-next: var(--color-signal-500); --masar-lane-later: #d97706; --masar-lane-done: #00a86b;
+}
+.dark[data-theme="violet"] {
+  --ui-primary: var(--color-iris-300);
+  --ui-bg: #16141e;
+  --ui-bg-muted: #1d1a27;
+  --ui-bg-elevated: #252132;
+  --ui-bg-accented: #2f2a3f;
+  --ui-border: #2b2738;
+  --ui-border-muted: #221f2d;
+  --ui-border-accented: #3a3550;
+  --ui-text: #e6e3f1;
+  --ui-text-toned: #d6d2e6;
+  --ui-text-muted: #a7a1bf;
+  --ui-text-highlighted: #faf9ff;
+  --masar-canvas: #16141e;
+  --masar-surface: #1b1825;
+  --masar-zebra: #191622;
+  --masar-selected: color-mix(in oklab, var(--color-iris-400) 18%, #16141e);
+  --masar-action: #f3f0ff;
+  --masar-action-text: #16141e;
+  --masar-open: var(--color-iris-300);
+  --masar-open-tint: color-mix(in oklab, var(--color-iris-400) 18%, transparent);
+  --masar-lane-now: var(--color-iris-400); --masar-lane-next: var(--color-signal-400); --masar-lane-later: #fbbf24; --masar-lane-done: #34d399;
+}
+
+/* ------------------------------------------------------------------ C — Masar Teal */
+[data-theme="teal"] {
+  --ui-color-primary-50: var(--color-lagoon-50); --ui-color-primary-100: var(--color-lagoon-100); --ui-color-primary-200: var(--color-lagoon-200);
+  --ui-color-primary-300: var(--color-lagoon-300); --ui-color-primary-400: var(--color-lagoon-400); --ui-color-primary-500: var(--color-lagoon-500);
+  --ui-color-primary-600: var(--color-lagoon-600); --ui-color-primary-700: var(--color-lagoon-700); --ui-color-primary-800: var(--color-lagoon-800);
+  --ui-color-primary-900: var(--color-lagoon-900); --ui-color-primary-950: var(--color-lagoon-950);
+  --ui-color-neutral-50: #f7f8f8; --ui-color-neutral-100: #eceeee; --ui-color-neutral-200: #e2e6e5; --ui-color-neutral-300: #d1d6d4;
+  --ui-color-neutral-400: #a0a8a6; --ui-color-neutral-500: #6b7472; --ui-color-neutral-600: #5a6361; --ui-color-neutral-700: #3e4644;
+  --ui-color-neutral-800: #29302e; --ui-color-neutral-900: #1f2523; --ui-color-neutral-950: #111715;
+  --ui-primary: var(--ui-color-primary-700);
+  --ui-bg: #ffffff;
+  --ui-bg-muted: #f7f8f8;
+  --ui-bg-elevated: #eef1f0;
+  --ui-border: #e5e8e7;
+  --ui-text-highlighted: #10302c;
+  /* Muted text is used for meaningful labels on tinted surfaces: keep it at least 4.5:1 there. */
+  --ui-text-muted: var(--ui-color-neutral-600);
+  --masar-canvas: #ffffff;
+  --masar-surface: #f7f8f8;
+  --masar-zebra: #fafbfb;
+  --masar-selected: var(--color-lagoon-50);
+  --masar-action: #0f3d38;
+  --masar-action-text: #ffffff;
+  --masar-open: var(--color-lagoon-700);
+  --masar-open-tint: var(--color-lagoon-50);
+  --masar-lane-now: var(--color-lagoon-700); --masar-lane-next: var(--color-signal-600); --masar-lane-later: #b45309; --masar-lane-done: #15803d;
+}
+.dark[data-theme="teal"] {
+  --ui-primary: var(--color-lagoon-300);
+  --ui-bg: #121716;
+  --ui-bg-muted: #181f1d;
+  --ui-bg-elevated: #1f2826;
+  --ui-bg-accented: #283331;
+  --ui-border: #26302e;
+  --ui-border-muted: #1e2725;
+  --ui-border-accented: #34403d;
+  --ui-text: #dfe6e4;
+  --ui-text-toned: #cdd6d3;
+  --ui-text-muted: #9aa6a3;
+  --ui-text-highlighted: #f4f8f7;
+  --masar-canvas: #121716;
+  --masar-surface: #161d1b;
+  --masar-zebra: #141a19;
+  --masar-selected: color-mix(in oklab, var(--color-lagoon-400) 18%, #121716);
+  --masar-action: #e6f4f2;
+  --masar-action-text: #0f3d38;
+  --masar-open: var(--color-lagoon-300);
+  --masar-open-tint: color-mix(in oklab, var(--color-lagoon-400) 18%, transparent);
+  --masar-lane-now: var(--color-lagoon-400); --masar-lane-next: var(--color-signal-400); --masar-lane-later: #fbbf24; --masar-lane-done: #4ade80;
+}

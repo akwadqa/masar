@@ -1,0 +1,107 @@
+@import "tailwindcss";
+@import "@nuxt/ui";
+@import "./themes.css";
+
+/* Task pages on mobile scroll as one page (iPhone stabilization 2026-10-30, client decision): phones in
+   portrait (narrow) and in landscape (a touch screen with a short viewport), in the browser and installed.
+   Elsewhere (desktop, tablets) the Task list scrolls by itself under its filters. Kept in step with
+   PAGE_SCROLL_QUERY (utils/pageScroll.ts). */
+@custom-variant page-scroll {
+  @media (max-width: 639px) { @slot; }
+  @media (pointer: coarse) and (max-height: 600px) { @slot; }
+}
+/* The complement: at least 640px wide and not (a touch screen at most 600px tall). */
+@custom-variant list-scroll {
+  @media (min-width: 640px) and (pointer: fine) { @slot; }
+  @media (min-width: 640px) and (pointer: none) { @slot; }
+  @media (min-width: 640px) and (min-height: 601px) { @slot; }
+}
+
+/*
+ * Global type and shared utilities. Colours, fonts and radii come from themes.css tokens; components
+ * use semantic utilities (bg-canvas, text-overdue, rounded-pill, font-display, font-meta …).
+ */
+
+/* Client revision 2: a slightly larger, more relaxed type scale for an all-day work tool. */
+@theme {
+  --text-xs: 0.8125rem;
+  --text-xs--line-height: 1.125rem;
+  --text-sm: 0.9375rem;
+  --text-sm--line-height: 1.375rem;
+  --text-base: 1rem;
+  --text-base--line-height: 1.5rem;
+}
+
+@layer base {
+  html { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+  body { background: var(--masar-canvas); }
+  /* Feels like an app on phones (client revision 5): no double-tap zoom or tap flash, no rubber-band
+     drag of the whole page, and text keeps its size when the phone turns. */
+  html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; -webkit-tap-highlight-color: transparent; }
+  html, body { overscroll-behavior: none; touch-action: manipulation; }
+  ::selection { background: color-mix(in oklab, var(--ui-primary) 22%, transparent); }
+}
+
+/* Type scale (DESIGN.md adapted to an application: no display sizes above page titles). */
+@utility text-page-title {
+  font-family: var(--masar-font-display);
+  font-size: 1.375rem;
+  line-height: 1.875rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+@utility text-section {
+  font-family: var(--masar-font-display);
+  font-size: 0.9375rem;
+  line-height: 1.375rem;
+  font-weight: 600;
+}
+/* Column headers and small labels: the same family as the rest of the page, never monospace. */
+@utility text-meta {
+  font-family: var(--masar-font-body);
+  font-size: 0.8125rem;
+  line-height: 1.125rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+}
+
+/* Full-width pages (profile menu): boxed pages drop their reading width. */
+[data-full-width] .masar-boxed { max-width: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+  }
+}
+
+/* WCAG AA: avatar initials (Nuxt UI uses text-muted on the elevated background). Regular weight and
+   2px smaller than the avatar's own text size (1px on the smallest avatars), so they read soft
+   (client revision 4). */
+[data-slot="fallback"] {
+  color: var(--avatar-fg, var(--ui-text-toned));
+  font-weight: 400;
+  font-size: max(calc(1em - 2px), min(calc(1em - 1px), 9px));
+}
+/* Personal avatar colours (utils/userColor.ts sets --avatar-base): soft tint, deep initials. */
+.masar-avatar {
+  background-color: color-mix(in oklab, var(--avatar-base) var(--masar-avatar-tint), var(--ui-bg));
+  --avatar-fg: color-mix(in oklab, var(--avatar-base) var(--masar-avatar-ink-mix), var(--masar-avatar-ink-base));
+}
+
+/* Comment content: server-sanitised HTML (ADR-052) rendered with a small, readable prose scale. */
+.masar-prose p { margin: 0.25rem 0; }
+.masar-prose ul { list-style: disc; padding-inline-start: 1.25rem; margin: 0.25rem 0; }
+.masar-prose ol { list-style: decimal; padding-inline-start: 1.25rem; margin: 0.25rem 0; }
+.masar-prose a { color: var(--ui-primary); text-decoration: underline; text-underline-offset: 2px; }
+.masar-prose code { font-family: var(--font-mono); font-size: 0.85em; padding: 0.1rem 0.3rem; border-radius: 0.25rem; background: var(--ui-bg-elevated); }
+.masar-prose img { max-height: 20rem; border-radius: var(--masar-radius-card); margin: 0.25rem 0; }
+.masar-prose .mention, [data-type="mention"] {
+  color: var(--ui-primary);
+  font-weight: 600;
+  background: color-mix(in oklab, var(--ui-primary) 10%, transparent);
+  border-radius: 0.25rem;
+  padding: 0 0.2rem;
+}
+.masar-prose { overflow-wrap: anywhere; }
