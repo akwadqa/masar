@@ -12,6 +12,7 @@ import type {
 } from '~/types/api'
 import { FINISHED_STATUSES } from '~/types/api'
 import type { MasarApiError } from '~/utils/apiError'
+import { chipApiQuery, chipIsActive, chipsAdmitNewTask } from '~/utils/taskFilterChips'
 
 const LIST_PREFIX = 'tasks:list:'
 const WORK_PREFIX = 'tasks:mywork:'
@@ -45,9 +46,9 @@ export function myWorkKey(filters: TaskListFilters) {
 
 /** Whether a brand-new, unassigned, open task would appear in a list with these filters. */
 export function filtersAdmitNewTask(filters: Partial<TaskListFilters>): boolean {
-  return filters.completed !== 'completed' && (!filters.statuses?.length || filters.statuses.includes('Open'))
-    && !filters.owners?.length && !filters.assignees?.length && !filters.assignedToMe && !filters.ownedByMe && !filters.important
-    && !filters.myDay && !filters.priority && !filters.due && !filters.label && !filters.q
+  return filters.completed !== 'completed' && chipsAdmitNewTask(filters)
+    && !filters.assignedToMe && !filters.ownedByMe && !filters.important
+    && !filters.myDay && !filters.due && !filters.q
     && (!filters.feature || filters.feature === 'none') && (!filters.release || filters.release === 'none')
     && (!filters.batch || filters.batch === 'none')
 }
@@ -64,17 +65,14 @@ export function parseListKey(key: string): TaskListFilters | null {
 export function toQuery(f: TaskListFilters) {
   return {
     // Chosen statuses are exact; without a choice `completed` decides (the Task lists show all).
-    completed: f.statuses?.length ? 'all' : f.completed,
-    statuses: f.statuses?.length ? f.statuses.join(',') : undefined,
-    owners: f.owners?.length ? f.owners.join(',') : undefined,
-    assignees: f.assignees?.length ? f.assignees.join(',') : undefined,
+    completed: chipIsActive(f, 'status') ? 'all' : f.completed,
+    // Status, owner, assignee, priority and label chips with their operators.
+    ...chipApiQuery(f),
     assigned_to_me: f.assignedToMe,
     owned_by_me: f.ownedByMe,
     important: f.important || undefined,
     my_day: f.myDay || undefined,
-    priority: f.priority || undefined,
     due: f.due || undefined,
-    label: f.label || undefined,
     feature: f.feature || undefined,
     release: f.release || undefined,
     batch: f.batch || undefined,

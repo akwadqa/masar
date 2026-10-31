@@ -23,11 +23,16 @@ function setQuery(patch: Record<string, string | undefined>) {
 const { data: spaces, status: loadStatus, error, refresh } = useSpaceList(scope)
 const createOpen = ref(false)
 
+// Name (A–Z, the server's order) or newest first (client request 2026-10-31); kept in the URL.
+const sort = computed<'name' | 'created'>(() => (route.query.sort === 'created' ? 'created' : 'name'))
+const sortItems = [{ label: 'Name', value: 'name' }, { label: 'Creation date', value: 'created' }]
+
 const filtered = computed(() => {
   const term = search.value.trim().toLowerCase()
-  return (spaces.value ?? []).filter(space =>
+  const matching = (spaces.value ?? []).filter(space =>
     (status.value === 'all' || space.status === status.value)
     && (!term || [space.title, space.category ?? '', space.owner.fullName].some(v => v.toLowerCase().includes(term))))
+  return sort.value === 'created' ? [...matching].sort((a, b) => Date.parse(b.creation) - Date.parse(a.creation)) : matching
 })
 const counts = computed(() => {
   const all = spaces.value ?? []
@@ -73,6 +78,14 @@ const hasFilters = computed(() => status.value !== 'In Progress' || !!search.val
             class="w-48"
             aria-label="Filter by status"
             @update:model-value="(v: string) => setQuery({ status: v === 'In Progress' ? undefined : v })"
+          />
+          <USelect
+            :model-value="sort"
+            :items="sortItems"
+            size="sm"
+            class="w-40"
+            aria-label="Sort spaces"
+            @update:model-value="(v: string) => setQuery({ sort: v === 'created' ? 'created' : undefined })"
           />
         </div>
       </UDashboardToolbar>

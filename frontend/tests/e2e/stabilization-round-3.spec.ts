@@ -235,8 +235,7 @@ test('QA-D10: the corrected controls name their visible text, nothing is nested,
   const page = await asUser(browser, USERS.manager, { width: 1440, height: 900 }, `/masar/spaces/${space}/tasks?task=${task}`)
   await expect(page.getByRole('dialog')).toBeVisible()
   // Visible text in the accessible name.
-  await expect(page.getByRole('button', { name: 'Filter by status: Status: active' })).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Filter by owner: Owner: anyone' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Add filter' })).toContainText('Filter')
   await expect(page.getByRole('dialog').getByRole('button', { name: /^1 person: E2E Manager/ })).toBeVisible()
   await expect(page.getByRole('dialog').getByRole('button', { name: 'Add labels' })).toBeVisible()
   await expect(page.getByRole('dialog').getByTestId('remaining-estimate')).toHaveAccessibleName(/^Remaining (not estimated|\d)/)

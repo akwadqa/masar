@@ -44,6 +44,8 @@ export interface SpaceSummary {
   status: SpaceStatus
   spaceType: SpaceType
   completionDate: string | null
+  /** ISO datetime the Space was created (Spaces page sort) */
+  creation: string
   icon: string | null
   iconColor: SpaceIconColor | null
   owner: UserRef
@@ -400,7 +402,12 @@ export interface Page<T> {
 }
 
 export type DueFilter = 'overdue' | 'today' | 'week' | 'none'
-export type TaskSort = 'manual' | 'recently_updated' | 'due_date'
+/** `manual` remains for Sprint boxes; the Task Lists offer `recently_updated` and `created`. */
+export type TaskSort = 'manual' | 'recently_updated' | 'due_date' | 'created'
+
+/** Filter chip operators (specs/dynamic-task-filters.md); sent as `<filter>_op`, `is` is the default. */
+export type FilterOperator = 'is' | 'not' | 'empty' | 'set'
+export type TaskFilterField = 'status' | 'assignee' | 'owner' | 'priority' | 'label' | 'space'
 
 export interface TaskListFilters {
   completed: 'open' | 'completed' | 'all'
@@ -414,9 +421,12 @@ export interface TaskListFilters {
   owners?: string[] | null
   /** Task assignees (user ids): Tasks assigned to any of them */
   assignees?: string[] | null
-  priority?: Priority | null
+  priorities?: Priority[] | null
   due?: DueFilter | null
-  label?: string | null
+  /** Label names (one Space's labels) */
+  labels?: string[] | null
+  /** Operator of each filter chip; a missing field means `is` */
+  operators?: Partial<Record<TaskFilterField, FilterOperator>> | null
   /** Feature / Release name, or 'none' for Tasks without one */
   feature?: string | null
   release?: string | null

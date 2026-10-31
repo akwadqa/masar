@@ -1,6 +1,6 @@
 import { expect, test, type Browser, type Page } from '@playwright/test'
 import type { Batch, Label, SpaceSummary, TaskDetail } from '../../app/types/api'
-import { USERS, pageApi, signIn, uniqueTitle } from './helpers'
+import { USERS, addFilter, pageApi, signIn, uniqueTitle } from './helpers'
 
 // Client revision 4 acceptance (docs/design/client-revision-4/README.md): personal My Day that updates
 // without a refresh and drops finished tasks, softer avatars, Masar beside other Frappe apps (Frappe
@@ -21,6 +21,15 @@ async function asUser(browser: Browser, email: string, path?: string): Promise<P
 async function api<T>(page: Page, method: string, body?: Record<string, unknown>, params?: Record<string, string>) {
   return pageApi<{ data: T }>(page, method, { body, params })
 }
+
+// The "+ Filter" menu offers no Label field (specs/dynamic-task-filters.md).
+async function expectNoLabelField(page: Page) {
+  await page.getByRole('button', { name: 'Add filter' }).click()
+  await expect(page.getByRole('menuitem', { name: 'Status', exact: true })).toBeVisible()
+  await expect(page.getByRole('menuitem', { name: 'Label', exact: true })).toHaveCount(0)
+  await page.keyboard.press('Escape')
+}
+
 async function createTask(page: Page, space: string, title: string) {
   return (await api<{ task: TaskDetail }>(page, 'masar.api.tasks.create', { space, title, client_request_id: crypto.randomUUID() })).body.data.task.name
 }
@@ -140,7 +149,7 @@ test('R9–R12: All Tasks keeps its filters on one row with soft-coloured icons;
   await expect(manager.getByRole('button', { name: 'Features panel' })).toHaveCount(0)
   const controls = [
     manager.getByRole('textbox', { name: 'Search tasks' }),
-    manager.getByRole('button', { name: 'Filter by status' }),
+    manager.getByRole('button', { name: 'Add filter' }),
     manager.getByRole('button', { name: 'Assigned to me' }),
     // Exact and inside the filter bar: every Task row also has a "Mark … as important" button (QA-T10).
     manager.getByTestId('task-filters').getByRole('button', { name: 'Important', exact: true }),
@@ -159,13 +168,13 @@ test('R9–R12: All Tasks keeps its filters on one row with soft-coloured icons;
     expect(Math.max(r!, g!, b!) - Math.min(r!, g!, b!), name).toBeGreaterThan(40)
   }
 
-  // Labels belong to one Space: the label filter appears once a single Space is chosen.
-  await expect(manager.getByRole('combobox', { name: 'Filter by label' })).toHaveCount(0)
+  // Labels belong to one Space: the Label field is offered once a single Space is chosen.
+  await expectNoLabelField(manager)
   await manager.goto(`/masar/tasks?spaces=${alpha},${gamma}`)
   await expect(manager.locator(`[data-task="${tasks.labelled}"]`)).toBeVisible()
-  await expect(manager.getByRole('combobox', { name: 'Filter by label' })).toHaveCount(0)
+  await expectNoLabelField(manager)
   await manager.goto(`/masar/tasks?spaces=${alpha}`)
-  await manager.getByRole('combobox', { name: 'Filter by label' }).click()
+  await addFilter(manager, 'Label')
   await manager.getByRole('option', { name: `${run} tag` }).click()
   await expect(manager.locator(`[data-task="${tasks.labelled}"]`)).toBeVisible()
   await expect(manager.locator(`[data-task="${tasks.shared}"]`)).toHaveCount(0)

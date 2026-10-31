@@ -1,6 +1,6 @@
 import { expect, test, type Browser, type Page } from '@playwright/test'
 import type { BatchDetail, FeatureDetail, SpaceSummary, TaskDetail, TimerSession } from '../../app/types/api'
-import { USERS, pageApi, signIn, uniqueTitle } from './helpers'
+import { USERS, addFilter, pageApi, signIn, uniqueTitle } from './helpers'
 
 // Client revision acceptance (docs/phases/phase-8a-client-revision.md): themes, My Day in the sidebar,
 // filter side panels, All Tasks planning, Task details, the work timer, file paste and drop, roadmap.
@@ -137,7 +137,7 @@ test('D: All Tasks keeps a selection across filters and plans it into a Sprint a
   await manager.goto(`/masar/tasks?q=${encodeURIComponent(run)}&group=batch`)
   await manager.getByRole('checkbox', { name: `Select ${run} gamma work` }).click()
   // Narrowing to one Space hides the Gamma task but keeps it selected.
-  await manager.getByRole('button', { name: 'Filter by Space' }).click()
+  await addFilter(manager, 'Space')
   await manager.getByRole('option', { name: ALPHA() }).click()
   // Close the menu without Escape (Escape also clears the selection on All Tasks).
   await manager.getByRole('heading', { name: 'All Tasks' }).click()
@@ -221,7 +221,7 @@ test('H: member and outsider never see another Space through All Tasks scope', a
   const denied = await api(member, 'masar.api.tasks.my_work', undefined, { spaces: JSON.stringify([gamma]), assigned_to_me: '0' })
   expect(denied.status).toBe(404)
   await member.goto('/masar/tasks')
-  await member.getByRole('button', { name: 'Filter by Space' }).click()
+  await addFilter(member, 'Space')
   await expect(member.getByRole('option', { name: ALPHA() })).toBeVisible()
   await expect(member.getByRole('option', { name: GAMMA() })).toHaveCount(0)
   await member.context().close()
@@ -356,7 +356,7 @@ test('Q: on a phone, My Day, All Tasks and Task properties remain usable', async
   await expect(phone).toHaveURL(/\/my-day$/)
   await expect(phone.getByRole('list', { name: 'Tasks' })).toBeVisible()
   await phone.goto(`/masar/tasks?q=${encodeURIComponent(run)}`)
-  await expect(phone.getByRole('button', { name: 'Filter by Space' })).toBeVisible()
+  await expect(phone.getByRole('button', { name: 'Add filter' })).toBeVisible()
   await phone.goto(`/masar/tasks/${tasks.plain}`)
   await phone.getByRole('button', { name: /^Priority: / }).click()
   await phone.getByRole('menuitemcheckbox', { name: 'Low', exact: true }).click()

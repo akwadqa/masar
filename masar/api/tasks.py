@@ -7,6 +7,8 @@ from masar.services import task_service
 from masar.services.personal import my_day_service
 from masar.utils.context import masar_write
 
+OPERATOR_FILTERS = ("statuses", "owners", "assignees", "priority", "label")
+
 
 def _list(value) -> list[str] | None:
 	"""A JSON array or a comma-separated query value."""
@@ -30,10 +32,12 @@ def _filters(kwargs) -> dict:
 		"statuses": _list(kwargs.get("statuses")),
 		"owners": _list(kwargs.get("owners")),
 		"assignees": _list(kwargs.get("assignees")),
-		"priority": kwargs.get("priority") or None,
+		"priority": _list(kwargs.get("priority")),
 		"due": kwargs.get("due") or None,
-		# One label, or several of the same name from different Spaces (All Tasks).
+		# Labels of one Space, or several of the same name from different Spaces (All Tasks).
 		"label": _list(kwargs.get("label")),
+		# Filter chip operators (is / not / empty / set), validated per field by the service.
+		**{f"{key}_op": kwargs.get(f"{key}_op") or None for key in OPERATOR_FILTERS},
 		"feature": kwargs.get("feature") or None,
 		"release": kwargs.get("release") or None,
 		"batch": kwargs.get("batch") or None,

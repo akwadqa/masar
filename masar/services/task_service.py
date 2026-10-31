@@ -31,6 +31,7 @@ from masar.permissions import (
 	require_task_access,
 	require_task_write,
 )
+from masar.services import task_filters
 from masar.services.batch_service import batch_refs, move_tasks
 from masar.services.personal.my_day_service import my_day_subquery, my_day_tasks, set_my_day
 from masar.services.planning_service import planning_refs
@@ -110,7 +111,8 @@ def _assignees_by_task(task_names: list[str]) -> dict[str, list[str]]:
 
 
 DUE_FILTERS = ("overdue", "today", "week", "none")
-SORTS = ("manual", "recently_updated", "due_date")
+# "manual" stays for Sprint boxes; the Task Lists offer only "recently_updated" and "created".
+SORTS = ("manual", "recently_updated", "due_date", "created")
 FAR_FUTURE = "9999-12-31"
 
 
@@ -186,14 +188,56 @@ def _serialise_rows(rows) -> list[dict]:
 	return items
 
 
-def _assigned_to(users: list[str]):
-	"""Subquery of the Tasks assigned to any of these users."""
+def _assigned_to(users: list[str] | None):
+	"""Subquery of the Tasks assigned to any of these users (to anyone when `users` is None)."""
 	assignee = frappe.qb.DocType("Masar Task Assignee")
-	return (
-		frappe.qb.from_(assignee)
-		.select(assignee.parent)
-		.where(assignee.user.isin(users) & (assignee.parenttype == "Masar Task"))
-	)
+	query = frappe.qb.from_(assignee).select(assignee.parent).where(assignee.parenttype == "Masar Task")
+	return query if users is None else query.where(assignee.user.isin(users))
+
+
+def _labelled(labels: list[str] | None):
+	"""Subquery of the Tasks carrying any of these labels (any label when `labels` is None)."""
+	task_label = frappe.qb.DocType("Masar Task Label")
+	query = frappe.qb.from_(task_label).select(task_label.parent).where(task_label.parenttype == "Masar Task")
+	return query if labels is None else query.where(task_label.label.isin(labels))
+
+
+def _strings(values) -> list[str] | None:
+	if values is None:
+		return None
+	return [v for v in ([values] if isinstance(values, str) else values) if isinstance(v, str)]
+
+
+def _apply_chips(query, task, chips: dict):
+	"""Status, owner, assignee, priority and label chips (task_filters: values OR, chips AND)."""
+	statuses = _strings(chips["statuses"])
+	if any(value not in STATUSES for value in statuses or []):
+		frappe.throw(_("Unknown status."))
+	priorities = _strings(chips["priority"])
+	if any(value not in PRIORITIES for value in priorities or []):
+		frappe.throw(_("Unknown priority."))
+	for field, values, op in (
+		(task.status, statuses, chips["statuses_op"]),
+		(task.priority, priorities, chips["priority_op"]),
+		(task.task_owner, _strings(chips["owners"]), chips["owners_op"]),
+	):
+		query = task_filters.apply(
+			query,
+			task_filters.column_condition(
+				field, values, task_filters.operator(op, task_filters.VALUE_OPERATORS)
+			),
+		)
+	for subquery, values, op in (
+		(_assigned_to, _strings(chips["assignees"]), chips["assignees_op"]),
+		(_labelled, _strings(chips["label"]), chips["label_op"]),
+	):
+		query = task_filters.apply(
+			query,
+			task_filters.membership_condition(
+				task, subquery, values, task_filters.operator(op, task_filters.SET_OPERATORS)
+			),
+		)
+	return query
 
 
 def _query_tasks(
@@ -205,11 +249,16 @@ def _query_tasks(
 	important=False,
 	my_day=False,
 	statuses: list[str] | None = None,
+	statuses_op: str | None = None,
 	owners: list[str] | None = None,
+	owners_op: str | None = None,
 	assignees: list[str] | None = None,
-	priority: str | None = None,
+	assignees_op: str | None = None,
+	priority: str | list[str] | None = None,
+	priority_op: str | None = None,
 	due: str | None = None,
 	label: str | list[str] | None = None,
+	label_op: str | None = None,
 	feature: str | None = None,
 	release: str | None = None,
 	batch: str | None = None,
@@ -237,26 +286,28 @@ def _query_tasks(
 		query = query.where(task.task_owner == user)
 	if assigned_to_me:
 		query = query.where(task.name.isin(_assigned_to([user])))
-	if statuses:
-		if any(value not in STATUSES for value in statuses):
-			frappe.throw(_("Unknown status."))
-		query = query.where(task.status.isin(statuses))
-	if owners:
-		# Owners only narrow Tasks of Spaces already authorised above; no other user data is read.
-		query = query.where(task.task_owner.isin([o for o in owners if isinstance(o, str)] or [""]))
-	if assignees:
-		# Like owners: Tasks with any of these assignees, within the Spaces authorised above.
-		query = query.where(
-			task.name.isin(_assigned_to([a for a in assignees if isinstance(a, str)] or [""]))
-		)
+	# Owner and assignee values only narrow Tasks of Spaces already authorised above; no other user
+	# data is read. Label names were validated for the listed Space(s) by the callers.
+	query = _apply_chips(
+		query,
+		task,
+		{
+			"statuses": statuses,
+			"statuses_op": statuses_op,
+			"owners": owners,
+			"owners_op": owners_op,
+			"assignees": assignees,
+			"assignees_op": assignees_op,
+			"priority": priority,
+			"priority_op": priority_op,
+			"label": label,
+			"label_op": label_op,
+		},
+	)
 	if important:
 		query = query.where(task.is_important == 1)
 	if my_day:
 		query = query.where(task.name.isin(my_day_subquery(user)))
-	if priority:
-		if priority not in PRIORITIES:
-			frappe.throw(_("Unknown priority."))
-		query = query.where(task.priority == priority)
 	if due:
 		today = getdate(nowdate())
 		if due == "overdue":
@@ -269,18 +320,6 @@ def _query_tasks(
 			query = query.where(task.due_date.isnull())
 		else:
 			frappe.throw(_("Unknown due-date filter."))
-	if label:
-		task_label = frappe.qb.DocType("Masar Task Label")
-		query = query.where(
-			task.name.isin(
-				frappe.qb.from_(task_label)
-				.select(task_label.parent)
-				.where(
-					task_label.label.isin([label] if isinstance(label, str) else label)
-					& (task_label.parenttype == "Masar Task")
-				)
-			)
-		)
 	# "none" selects Tasks without a Feature / Release; a name must already be validated for the Space.
 	if feature:
 		query = query.where(task.feature.isnull() if feature == "none" else task.feature == feature)
@@ -323,6 +362,9 @@ def _query_tasks(
 
 	if sort == "recently_updated":
 		key, order = task.modified, Order.desc
+		cmp = lambda k, v: k < v  # noqa: E731
+	elif sort == "created":
+		key, order = task.creation, Order.desc
 		cmp = lambda k, v: k < v  # noqa: E731
 	elif sort == "due_date":
 		key, order = Coalesce(task.due_date, FAR_FUTURE), Order.asc

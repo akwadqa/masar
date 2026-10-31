@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { SpaceDetail, TaskListRow } from '~/types/api'
+import type { SpaceDetail, TaskListRow, TaskSort } from '~/types/api'
 import { useMediaQuery } from '@vueuse/core'
 import type { FilterPanelKind } from '~/composables/workspace/useFilterPanel'
 import { COMPOSER_SLOT } from '~/utils/pageScroll'
@@ -8,7 +8,9 @@ const props = defineProps<{ space: SpaceDetail }>()
 
 const route = useRoute()
 // Every Task by default, completed included (client request, Oct 2026); the Status filter narrows it.
-const { filters, setQuery, activeCount, clearFilters } = useTaskFilters({ completed: 'all' })
+// Recently updated or Creation date; manual order was dropped (client decision 2026-10-31).
+const SORTS: TaskSort[] = ['recently_updated', 'created']
+const { filters, setQuery, activeCount, clearFilters } = useTaskFilters({ completed: 'all', sort: 'recently_updated' }, SORTS)
 
 const { data: tasks, status, error, refresh } = useTaskList(() => props.space.name, filters)
 const { data: labels } = useSpaceLabels(() => props.space.name)
@@ -71,7 +73,7 @@ watch(() => openPanels.value.join(), () => {
           :open-panels="openPanels"
           :active-names="activeNames"
           show-mine
-          :sorts="['manual', 'recently_updated']"
+          :sorts="SORTS"
           :active-count="activeCount"
           @set="setQuery"
           @clear="clearFilters"

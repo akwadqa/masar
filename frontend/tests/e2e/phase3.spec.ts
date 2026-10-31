@@ -1,7 +1,7 @@
 import AxeBuilder from '@axe-core/playwright'
 import { expect, test, type Browser, type Page } from '@playwright/test'
 import type { Label, SpaceSummary, TaskAction, TaskDetail, TaskListRow, TaskSearchResult } from '../../app/types/api'
-import { ALPHA, USERS, pageApi, pressPaletteShortcut, signIn, uniqueTitle } from './helpers'
+import { ALPHA, USERS, addFilter, pageApi, pressPaletteShortcut, signIn, uniqueTitle } from './helpers'
 
 // Phase 3 acceptance scenarios A–G (docs/phases/phase-3.md) plus automated accessibility checks.
 test.describe.configure({ mode: 'serial' })
@@ -160,7 +160,7 @@ test('D: a shared label is created, applied to several tasks and used as a filte
 
   const labels = (await pageApi<{ data: Label[] }>(member, 'masar.api.labels.list', { params: { space: alpha } })).body.data
   expect(labels.filter(l => l.title === labelName)).toHaveLength(1)
-  await member.getByRole('combobox', { name: 'Filter by label' }).click()
+  await addFilter(member, 'Label')
   await member.getByRole('option', { name: labelName }).click()
   const list = member.getByRole('list', { name: 'Tasks' })
   await expect(list.getByRole('listitem', { name: first })).toBeVisible()
@@ -173,7 +173,7 @@ test('E: multi-selection drives an authorised bulk update without touching other
   const member = await asUser(browser, USERS.member)
   const names = [] as string[]
   for (const i of [1, 2, 3, 4]) names.push(await createTask(member, `${run} bulk ${i}`))
-  await member.goto(`/masar/spaces/${alpha}/tasks?q=${encodeURIComponent(`${run} bulk`)}&sort=manual`)
+  await member.goto(`/masar/spaces/${alpha}/tasks?q=${encodeURIComponent(`${run} bulk`)}&sort=created`)
   const list = member.getByRole('list', { name: 'Tasks' })
   await expect(list.getByRole('listitem')).toHaveCount(4)
   // Newest first: rows are bulk 4, 3, 2, 1. Select bulk 4, then Shift-select bulk 2.
