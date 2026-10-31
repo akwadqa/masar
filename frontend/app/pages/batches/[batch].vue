@@ -10,7 +10,7 @@ const { data: batch, status, error, refresh } = useBatch(name)
 const mutations = useBatchMutations()
 const toast = useToast()
 const { user } = useSession()
-useHead(() => ({ title: batch.value ? `${batch.value.batchName} · Masar` : 'Sprint · Masar' }))
+useHead(() => ({ title: batch.value ? `${batch.value.batchName} · Masar` : 'Batch · Masar' }))
 
 type Tab = 'tasks' | 'add' | 'history'
 const tabs = computed(() => {
@@ -61,7 +61,7 @@ async function saveEdit() {
     editing.value = false
   } catch (caught) {
     const apiError = caught as MasarApiError
-    editError.value = apiError.kind === 'conflict' ? 'Someone else changed this Sprint. The latest values are shown.' : apiError.message
+    editError.value = apiError.kind === 'conflict' ? 'Someone else changed this Batch. The latest values are shown.' : apiError.message
     if (apiError.kind === 'conflict') await refresh()
   }
 }
@@ -75,7 +75,7 @@ async function start() {
   try {
     await mutations.start.execute({ batch: batch.value.name, requestId: startRequest })
     confirmStart.value = false
-    toast.add({ title: 'Sprint started', description: batch.value?.batchName, color: 'success', icon: 'i-lucide-play' })
+    toast.add({ title: 'Batch started', description: batch.value?.batchName, color: 'success', icon: 'i-lucide-play' })
   } catch {
     confirmStart.value = false
     await refresh()
@@ -88,8 +88,8 @@ async function remove() {
   if (!batch.value) return
   try {
     await mutations.remove.execute({ batch: batch.value.name })
-    toast.add({ title: 'Sprint deleted', color: 'neutral', icon: 'i-lucide-trash-2' })
-    await navigateTo('/sprints')
+    toast.add({ title: 'Batch deleted', color: 'neutral', icon: 'i-lucide-trash-2' })
+    await navigateTo('/batches')
   } catch {
     confirmDelete.value = false
   }
@@ -107,7 +107,7 @@ const menuItems = computed(() => {
   const items = []
   if (value.status === 'Planned') items.push({ label: 'Edit name and dates', icon: 'i-lucide-pencil', onSelect: startEdit })
   items.push({ label: 'Transfer ownership', icon: 'i-lucide-user-round-cog', onSelect: () => { transferring.value = true } })
-  if (value.status === 'Planned') items.push({ label: 'Delete Sprint', icon: 'i-lucide-trash-2', color: 'error' as const, onSelect: () => { confirmDelete.value = true } })
+  if (value.status === 'Planned') items.push({ label: 'Delete Batch', icon: 'i-lucide-trash-2', color: 'error' as const, onSelect: () => { confirmDelete.value = true } })
   return items
 })
 </script>
@@ -115,20 +115,20 @@ const menuItems = computed(() => {
 <template>
   <UDashboardPanel :id="`batch-${name}`" :ui="{ body: 'p-0 sm:p-0 gap-0' }">
     <template #header>
-      <UDashboardNavbar :title="batch?.batchName ?? 'Sprint'">
+      <UDashboardNavbar :title="batch?.batchName ?? 'Batch'">
         <template #leading>
           <UDashboardSidebarCollapse />
-          <UButton to="/sprints" icon="i-lucide-arrow-left" color="neutral" variant="ghost" size="sm" aria-label="All Sprints" />
+          <UButton to="/batches" icon="i-lucide-arrow-left" color="neutral" variant="ghost" size="sm" aria-label="All Batches" />
         </template>
         <template #right>
           <template v-if="batch">
             <BatchStatusBadge :status="batch.status" />
             <!-- Phones (QA-D04): these show their icon only, so the header controls do not overlap and the
-                 Sprint title keeps room; the name stays as the accessible name. -->
-            <UButton v-if="batch.canManage && batch.status === 'Planned'" icon="i-lucide-play" label="Start Sprint" aria-label="Start Sprint" :ui="{ label: 'max-sm:hidden' }" @click="confirmStart = true" />
-            <UButton v-if="batch.canManage && batch.status === 'Active'" icon="i-lucide-flag" label="Finish Sprint" aria-label="Finish Sprint" :ui="{ label: 'max-sm:hidden' }" @click="finishing = true" />
+                 Batch title keeps room; the name stays as the accessible name. -->
+            <UButton v-if="batch.canManage && batch.status === 'Planned'" icon="i-lucide-play" label="Start Batch" aria-label="Start Batch" :ui="{ label: 'max-sm:hidden' }" @click="confirmStart = true" />
+            <UButton v-if="batch.canManage && batch.status === 'Active'" icon="i-lucide-flag" label="Finish Batch" aria-label="Finish Batch" :ui="{ label: 'max-sm:hidden' }" @click="finishing = true" />
             <UDropdownMenu v-if="menuItems.length" :items="menuItems" :content="{ align: 'end' }">
-              <UButton icon="i-lucide-ellipsis" color="neutral" variant="ghost" square aria-label="More Sprint actions" />
+              <UButton icon="i-lucide-ellipsis" color="neutral" variant="ghost" square aria-label="More Batch actions" />
             </UDropdownMenu>
           </template>
           <NotificationBell placement="navbar" class="lg:hidden" />
@@ -144,17 +144,17 @@ const menuItems = computed(() => {
       <StatePanel
         v-else-if="error?.kind === 'not_found' || (!batch && status === 'success')"
         icon="i-lucide-calendar-x"
-        title="Sprint not found"
-        description="This Sprint does not exist or it holds no work you can access."
+        title="Batch not found"
+        description="This Batch does not exist or it holds no work you can access."
       >
-        <UButton to="/sprints" label="Go to Sprints" />
+        <UButton to="/batches" label="Go to Batches" />
       </StatePanel>
-      <StatePanel v-else-if="error && !batch" tone="error" icon="i-lucide-cloud-off" title="This Sprint could not be loaded" :description="error.message">
+      <StatePanel v-else-if="error && !batch" tone="error" icon="i-lucide-cloud-off" title="This Batch could not be loaded" :description="error.message">
         <UButton label="Try again" @click="refresh()" />
       </StatePanel>
 
       <div v-else-if="batch" class="flex h-full min-h-0 flex-col">
-        <section class="space-y-3 border-b border-default px-4 py-4 sm:px-6" aria-label="Sprint summary">
+        <section class="space-y-3 border-b border-default px-4 py-4 sm:px-6" aria-label="Batch summary">
           <form v-if="editing" class="flex flex-wrap items-end gap-2" @submit.prevent="saveEdit">
             <UFormField label="Name" class="min-w-56 flex-1">
               <UInput v-model="editName" maxlength="140" class="w-full" />
@@ -175,7 +175,7 @@ const menuItems = computed(() => {
             color="warning"
             variant="subtle"
             icon="i-lucide-shield-alert"
-            title="You no longer manage every Space in this Sprint"
+            title="You no longer manage every Space in this Batch"
             description="Planning, starting and finishing need Manager access to every Space whose tasks are in it. Ask a Manager of all those Spaces to take it over."
           />
           <UAlert
@@ -183,9 +183,9 @@ const menuItems = computed(() => {
             color="info"
             variant="subtle"
             icon="i-lucide-user-round-cog"
-            title="This Sprint's owner can no longer manage it"
+            title="This Batch's owner can no longer manage it"
             description="You manage every Space in it, so you can take it over."
-            :actions="[{ label: 'Take over this Sprint', color: 'info', onClick: claim }]"
+            :actions="[{ label: 'Take over this Batch', color: 'info', onClick: claim }]"
           />
         </section>
 
@@ -206,21 +206,21 @@ const menuItems = computed(() => {
       </div>
 
       <template v-if="batch">
-        <UModal v-model:open="confirmStart" :title="`Start ${batch.batchName}?`" description="The Sprint becomes Active. Task completion is not changed; tasks can still be added or removed, and those changes are recorded as scope changes.">
+        <UModal v-model:open="confirmStart" :title="`Start ${batch.batchName}?`" description="The Batch becomes Active. Task completion is not changed; tasks can still be added or removed, and those changes are recorded as scope changes.">
           <template #footer>
             <div class="flex w-full justify-end gap-2">
               <UButton color="neutral" variant="ghost" label="Cancel" @click="confirmStart = false" />
-              <UButton icon="i-lucide-play" label="Start Sprint" :loading="mutations.start.pending.value" @click="start" />
+              <UButton icon="i-lucide-play" label="Start Batch" :loading="mutations.start.pending.value" @click="start" />
             </div>
           </template>
         </UModal>
         <FinishBatchModal v-if="batch.status === 'Active'" v-model:open="finishing" :batch="batch" />
         <TransferBatchModal v-model:open="transferring" :batch="batch" />
-        <UModal v-model:open="confirmDelete" :title="`Delete ${batch.batchName}?`" description="Only an empty, planned Sprint can be deleted. This cannot be undone.">
+        <UModal v-model:open="confirmDelete" :title="`Delete ${batch.batchName}?`" description="Only an empty, planned Batch can be deleted. This cannot be undone.">
           <template #footer>
             <div class="flex w-full justify-end gap-2">
               <UButton color="neutral" variant="ghost" label="Cancel" @click="confirmDelete = false" />
-              <UButton color="error" label="Delete Sprint" :loading="mutations.remove.pending.value" @click="remove" />
+              <UButton color="error" label="Delete Batch" :loading="mutations.remove.pending.value" @click="remove" />
             </div>
           </template>
         </UModal>

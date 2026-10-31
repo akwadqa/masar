@@ -404,7 +404,7 @@ export interface Page<T> {
 }
 
 export type DueFilter = 'overdue' | 'today' | 'week' | 'none'
-/** `manual` remains for Sprint boxes; the Task Lists offer `recently_updated` and `created`. */
+/** `manual` remains for Batch boxes; the Task Lists offer `recently_updated` and `created`. */
 export type TaskSort = 'manual' | 'recently_updated' | 'due_date' | 'created'
 
 /** Filter chip operators (specs/dynamic-task-filters.md); sent as `<filter>_op`, `is` is the default. */

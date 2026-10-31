@@ -17,13 +17,13 @@ Tasks). The client asked for a field / operator / value filter that stays simple
    no grouping. One chip per field: choosing a field that already has a chip opens that chip.
 3. Operators: `is` (any of the values), `is not` (none of the values), `is empty`, `is not empty`.
    Each field offers only the operators that mean something for it (table below).
-4. Feature, Version and Sprint keep their side panels and chips as they are today.
-5. Search, "Assigned to me", "Important", "Group by Sprint" and Sort stay outside the chip builder,
+4. Feature, Version and Batch keep their side panels and chips as they are today.
+5. Search, "Assigned to me", "Important", "Group by Batch" and Sort stay outside the chip builder,
    because they are used constantly.
 6. Task List sorts, both on the Space Task List and on All Tasks: **Recently updated** (default) and
    **Creation date** (newest first). **Manual order is removed from both lists** (client, 2026-10-31):
    `sort_order` values of different Spaces cannot be compared, and Task rows cannot be reordered by
-   hand anyway. The backend keeps the `manual` sort for Sprint boxes (`useBatches`), which still use
+   hand anyway. The backend keeps the `manual` sort for Batch boxes (`useBatches`), which still use
    it. Old links with `sort=manual` fall back to Recently updated.
 7. Spaces page gets a sort: **Name** (A–Z, today's order and the default) and **Creation date**
    (newest first).

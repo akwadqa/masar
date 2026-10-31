@@ -267,7 +267,7 @@ def _space_notification(kind: str, recipient: str | None, space: str, actor: str
 		email = {
 			"heading": _("Welcome to {0}").format(space_title),
 			"intro": _(
-				"{0} added you to this Space as {1}. Its tasks, Sprints and roadmap are now open to you."
+				"{0} added you to this Space as {1}. Its tasks, Batches and roadmap are now open to you."
 			).format(who, _(role or "Member")),
 			"reason": _("You receive this because you were added to this Space."),
 			"cta": _("Open Space"),

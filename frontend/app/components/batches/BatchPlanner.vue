@@ -74,7 +74,7 @@ async function add() {
     await load()
   } catch (caught) {
     if ((caught as { kind?: string }).kind === 'conflict') {
-      toast.add({ title: 'Some tasks changed Sprint meanwhile', description: 'The list was refreshed. Review and try again.', color: 'warning', icon: 'i-lucide-git-compare' })
+      toast.add({ title: 'Some tasks changed Batch meanwhile', description: 'The list was refreshed. Review and try again.', color: 'warning', icon: 'i-lucide-git-compare' })
       chosen.value = new Map()
       await load()
     }
@@ -94,18 +94,18 @@ const releaseItems = computed(() => [{ label: 'Any Release', value: 'any' }, { l
         <UInput v-model="q" icon="i-lucide-search" placeholder="Search open tasks" size="sm" class="w-full sm:w-56" aria-label="Search open tasks" />
         <USelect v-model="feature" :items="featureItems" size="sm" class="w-40" aria-label="Filter by Feature" />
         <USelect v-model="release" :items="releaseItems" size="sm" class="w-40" aria-label="Filter by Release" />
-        <USwitch v-model="unbatchedOnly" label="Only tasks without a Sprint" size="sm" />
+        <USwitch v-model="unbatchedOnly" label="Only tasks without a Batch" size="sm" />
       </div>
       <div class="flex flex-wrap items-center gap-2" aria-live="polite">
         <span class="text-sm" :class="chosen.size ? 'font-medium text-highlighted' : 'text-muted'">
           {{ chosen.size ? `${chosen.size} selected from ${chosenSpaces} Space${chosenSpaces === 1 ? '' : 's'}` : 'Select tasks, switch Space to add more, then add them together.' }}
         </span>
         <UButton v-if="chosen.size" size="xs" variant="link" color="neutral" label="Clear selection" @click="chosen = new Map()" />
-        <UButton class="ms-auto" size="sm" icon="i-lucide-calendar-plus" :label="`Add ${chosen.size || ''} to Sprint`.replace('  ', ' ')" :disabled="!chosen.size" :loading="moveTasks.pending.value" @click="add" />
+        <UButton class="ms-auto" size="sm" icon="i-lucide-calendar-plus" :label="`Add ${chosen.size || ''} to Batch`.replace('  ', ' ')" :disabled="!chosen.size" :loading="moveTasks.pending.value" @click="add" />
       </div>
     </div>
     <div class="relative min-h-0 flex-1">
-      <StatePanel v-if="!managed.length" icon="i-lucide-shield" title="You manage no open Space" description="Only Space Managers plan tasks into Sprints." />
+      <StatePanel v-if="!managed.length" icon="i-lucide-shield" title="You manage no open Space" description="Only Space Managers plan tasks into Batches." />
       <StatePanel v-else-if="loadError" tone="error" icon="i-lucide-cloud-off" title="Tasks could not be loaded" :description="loadError">
         <UButton label="Try again" @click="load()" />
       </StatePanel>

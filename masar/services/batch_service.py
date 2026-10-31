@@ -80,11 +80,11 @@ def _managed_batch(batch: str, *, lock: bool = True):
 		doc = frappe.get_doc("Masar Batch", batch, for_update=True)
 	if doc.status == "Finished":
 		frappe.throw(
-			_("A finished Sprint is a historical record and cannot be changed."), frappe.PermissionError
+			_("A finished Batch is a historical record and cannot be changed."), frappe.PermissionError
 		)
 	if not can_manage_batch(doc):
 		frappe.throw(
-			_("Only the Sprint owner can plan it, and only while they manage every Space in it."),
+			_("Only the Batch owner can plan it, and only while they manage every Space in it."),
 			frappe.PermissionError,
 		)
 	return doc
@@ -198,7 +198,7 @@ def list_batches(
 			not_found("Space")
 		spaces = [space]
 	if status and status not in STATUSES:
-		frappe.throw(_("Unknown Sprint status."))
+		frappe.throw(_("Unknown Batch status."))
 	batch = frappe.qb.DocType("Masar Batch")
 	item = frappe.qb.DocType("Masar Batch Item")
 	query = frappe.qb.from_(batch).select(*[batch[f] for f in BATCH_FIELDS])
@@ -389,14 +389,14 @@ def create_batch(
 	"""Any Space Manager may create a Batch and becomes its owner. Idempotent per request id."""
 	require_masar_user()
 	if not can_create_batches():
-		frappe.throw(_("Only Space Managers can create Sprints."), frappe.PermissionError)
+		frappe.throw(_("Only Space Managers can create Batches."), frappe.PermissionError)
 	key = _request_id(client_request_id)
 	if not start_date:
-		frappe.throw(_("A Sprint needs a start date."))
+		frappe.throw(_("A Batch needs a start date."))
 	if preset:
 		end_date = end_for_preset(start_date, preset)
 	if not end_date:
-		frappe.throw(_("A Sprint needs an end date or a duration preset."))
+		frappe.throw(_("A Batch needs an end date or a duration preset."))
 	if key:
 		existing = _find_created(key)
 		if existing:
@@ -404,7 +404,7 @@ def create_batch(
 				existing.start_date
 			) != getdate(start_date):
 				frappe.throw(
-					_("This request id was already used for a different Sprint."), MasarRequestReuseError
+					_("This request id was already used for a different Batch."), MasarRequestReuseError
 				)
 			return {"batch": _detail(frappe.get_doc("Masar Batch", existing.name)), "created": False}
 	doc = frappe.get_doc(
@@ -450,7 +450,7 @@ def update_batch(batch: str, changes: dict, base: dict | None = None) -> dict:
 		frappe.throw(_("These fields cannot be edited here: {0}").format(", ".join(sorted(unknown))))
 	doc = _managed_batch(batch)
 	if doc.status != "Planned":
-		frappe.throw(_("Name and dates can only be changed before the Sprint starts."), frappe.PermissionError)
+		frappe.throw(_("Name and dates can only be changed before the Batch starts."), frappe.PermissionError)
 	conflicts = []
 	for field, value in changes.items():
 		if (
@@ -464,7 +464,7 @@ def update_batch(batch: str, changes: dict, base: dict | None = None) -> dict:
 	if conflicts:
 		frappe.local.response["conflicts"] = conflicts
 		frappe.throw(
-			_("This Sprint was changed by someone else. Review the latest values."), MasarConflictError
+			_("This Batch was changed by someone else. Review the latest values."), MasarConflictError
 		)
 	for field, value in changes.items():
 		doc.set(EDITABLE[field], _normalise(field, value))
@@ -480,14 +480,14 @@ def delete_batch(batch: str) -> dict:
 	are history and cannot be deleted."""
 	doc = _managed_batch(batch)
 	if doc.status != "Planned":
-		frappe.throw(_("Only a planned Sprint can be deleted. Active and finished Sprints are kept as history."))
+		frappe.throw(_("Only a planned Batch can be deleted. Active and finished Batches are kept as history."))
 	planned = frappe.get_all(
 		"Masar Batch Item", filters={"batch": doc.name, "current_task": ["is", "set"]}, pluck="current_task"
 	)
 	if planned:
 		move_tasks(planned, None)
 	if frappe.db.exists("Masar Batch Item", {"batch": doc.name}):
-		frappe.throw(_("This Sprint still holds tasks you cannot move. Nothing was deleted."))
+		frappe.throw(_("This Batch still holds tasks you cannot move. Nothing was deleted."))
 	with masar_service():
 		frappe.db.delete("Masar Activity", {"reference_doctype": "Masar Batch", "reference_name": doc.name})
 		frappe.delete_doc("Masar Batch", doc.name)
@@ -515,22 +515,22 @@ def transfer_ownership(batch: str, new_owner: str, expected_owner: str | None = 
 	doc = frappe.get_doc("Masar Batch", batch, for_update=True)
 	if doc.status == "Finished":
 		frappe.throw(
-			_("A finished Sprint is a historical record and cannot be changed."), frappe.PermissionError
+			_("A finished Batch is a historical record and cannot be changed."), frappe.PermissionError
 		)
 	if expected_owner and expected_owner != doc.batch_owner:
 		frappe.local.response["conflicts"] = [{"field": "owner", "current": doc.batch_owner}]
-		frappe.throw(_("The Sprint owner changed meanwhile. Review the latest state."), MasarConflictError)
+		frappe.throw(_("The Batch owner changed meanwhile. Review the latest state."), MasarConflictError)
 	user = frappe.session.user
 	claiming = new_owner == user and _can_claim(doc)
 	if not claiming and not can_manage_batch(doc):
-		frappe.throw(_("Only the Sprint owner can transfer it."), frappe.PermissionError)
+		frappe.throw(_("Only the Batch owner can transfer it."), frappe.PermissionError)
 	spaces = get_user_spaces(new_owner)
 	if not frappe.db.get_value("User", new_owner, "enabled") or not any(
 		r == MANAGER for r in spaces.values()
 	):
 		frappe.throw(_("The new owner must be an active Space Manager."))
 	if not has_full_scope(doc.name, new_owner):
-		frappe.throw(_("The new owner must manage every Space whose tasks are in this Sprint."))
+		frappe.throw(_("The new owner must manage every Space whose tasks are in this Batch."))
 	previous = doc.batch_owner
 	doc.batch_owner = new_owner
 	with masar_service():
@@ -614,7 +614,7 @@ def move_tasks(task_names: list[str], batch: str | None, expected: dict | None =
 	if not names:
 		frappe.throw(_("Select at least one task."))
 	if len(names) > MOVE_MAX:
-		frappe.throw(_("Sprint changes are limited to {0} tasks at a time.").format(MOVE_MAX))
+		frappe.throw(_("Batch changes are limited to {0} tasks at a time.").format(MOVE_MAX))
 	require_masar_user()
 	spaces = get_user_spaces()
 	rows = frappe.get_all(  # authorised below against the caller's memberships
@@ -625,7 +625,7 @@ def move_tasks(task_names: list[str], batch: str | None, expected: dict | None =
 		not_found("Task")
 	for space in set(space_of.values()):
 		if spaces[space] != MANAGER:
-			frappe.throw(_("Only Space Managers can plan tasks into Sprints."), frappe.PermissionError)
+			frappe.throw(_("Only Space Managers can plan tasks into Batches."), frappe.PermissionError)
 		require_task_write(space, MANAGER)
 	target = _managed_batch(batch) if batch else None
 	frappe.db.sql("select name from `tabMasar Task` where name in %s for update", (names,))
@@ -645,7 +645,7 @@ def move_tasks(task_names: list[str], batch: str | None, expected: dict | None =
 			sources[item.batch] = frappe.get_doc("Masar Batch", item.batch, for_update=True)
 			if not can_manage_batch(sources[item.batch]):
 				frappe.throw(
-					_("A selected task is in a Sprint you do not manage. Ask its owner to move it."),
+					_("A selected task is in a Batch you do not manage. Ask its owner to move it."),
 					frappe.PermissionError,
 				)
 	conflicts = [
@@ -658,7 +658,7 @@ def move_tasks(task_names: list[str], batch: str | None, expected: dict | None =
 	if conflicts:
 		frappe.local.response["conflicts"] = conflicts
 		frappe.throw(
-			_("Some selected tasks changed Sprint meanwhile. Refresh and try again."), MasarConflictError
+			_("Some selected tasks changed Batch meanwhile. Refresh and try again."), MasarConflictError
 		)
 
 	changed = []
@@ -677,7 +677,7 @@ def move_tasks(task_names: list[str], batch: str | None, expected: dict | None =
 					_insert_item(target.name, name, space_of[name], after_start=target.status == "Active")
 				except (frappe.UniqueValidationError, frappe.DuplicateEntryError):
 					frappe.throw(
-						_("A selected task was just planned into another Sprint. Refresh and try again."),
+						_("A selected task was just planned into another Batch. Refresh and try again."),
 						MasarConflictError,
 					)
 				_task_activity(name, space_of[name], "batch_added", {"batch": target.name})
@@ -700,7 +700,7 @@ def start_batch(batch: str, request_id: str | None = None) -> dict:
 		if doc.status == "Active" and key and doc.start_request_id == key:
 			return _detail(doc)
 		frappe.local.response["conflicts"] = [{"field": "status", "current": doc.status}]
-		frappe.throw(_("This Sprint was already started or finished."), MasarConflictError)
+		frappe.throw(_("This Batch was already started or finished."), MasarConflictError)
 	doc = _managed_batch(batch)
 	doc.status = "Active"
 	doc.started_at = now_datetime()
@@ -733,7 +733,7 @@ def finish_preview(batch: str) -> dict:
 	reveal nothing beyond Spaces they already manage."""
 	doc = _managed_batch(batch, lock=False)
 	if doc.status != "Active":
-		frappe.throw(_("Only an active Sprint can be finished."))
+		frappe.throw(_("Only an active Batch can be finished."))
 	items = _current_items(doc.name)
 	open_items = [i for i in items if not i.is_completed]
 	closed = [i for i in open_items if get_space_status(i.space) == CLOSED]
@@ -791,17 +791,17 @@ def finish_batch(
 		if doc.finish_request_id == key and doc.finished_by == frappe.session.user:
 			return _finish_result(doc)
 		frappe.local.response["conflicts"] = [{"field": "status", "current": doc.status}]
-		frappe.throw(_("This Sprint was already finished."), MasarConflictError)
+		frappe.throw(_("This Batch was already finished."), MasarConflictError)
 	doc = _managed_batch(batch)  # authority before state validation
 	if doc.status != "Active":
-		frappe.throw(_("Only an active Sprint can be finished."))
+		frappe.throw(_("Only an active Batch can be finished."))
 	dest = None
 	if carry == "Batch":
 		if not destination or destination == doc.name:
-			frappe.throw(_("Choose a planned Sprint for the unfinished tasks."))
+			frappe.throw(_("Choose a planned Batch for the unfinished tasks."))
 		dest = _managed_batch(destination)
 		if dest.status != "Planned":
-			frappe.throw(_("Unfinished tasks can only move to a planned Sprint."))
+			frappe.throw(_("Unfinished tasks can only move to a planned Batch."))
 	items = _current_items(doc.name, lock=True)
 	carried = []
 	now = now_datetime()

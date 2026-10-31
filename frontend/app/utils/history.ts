@@ -29,9 +29,9 @@ export function describeHistory(entry: HistoryEntry): string {
     case 'label_added': return `${who} added the label ${entry.label ?? '(deleted label)'}`
     case 'label_removed': return `${who} removed the label ${entry.label ?? '(deleted label)'}`
     case 'batch_added': return entry.carriedFrom
-      ? `${who} carried the task over from ${entry.carriedFrom} to ${entry.batch ?? 'another Sprint'}`
-      : `${who} planned the task into ${entry.batch ?? 'a Sprint'}`
-    case 'batch_removed': return `${who} took the task out of ${entry.batch ?? 'a Sprint'}`
+      ? `${who} carried the task over from ${entry.carriedFrom} to ${entry.batch ?? 'another Batch'}`
+      : `${who} planned the task into ${entry.batch ?? 'a Batch'}`
+    case 'batch_removed': return `${who} took the task out of ${entry.batch ?? 'a Batch'}`
     case 'action_promoted': return `${who} promoted an Action to the task ${entry.task ?? '(no longer available)'}`
     case 'promoted_from_action': return `${who} created this task from an Action of ${entry.task ?? 'another task'}`
     case 'comment_deleted': return entry.moderated

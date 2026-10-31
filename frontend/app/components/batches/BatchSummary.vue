@@ -13,7 +13,7 @@ const history = computed(() => {
   if (b.startedAt) parts.push(`Started ${formatDateTime(b.startedAt)}${b.startedBy ? ` by ${b.startedBy.fullName}` : ''}`)
   if (b.finishedAt) parts.push(`Finished ${formatDateTime(b.finishedAt)}${b.finishedBy ? ` by ${b.finishedBy.fullName}` : ''}`)
   if (b.progress.addedAfterStart) parts.push(`${b.progress.addedAfterStart} added after start`)
-  if (b.progress.removed) parts.push(`${b.progress.removed} removed during the Sprint`)
+  if (b.progress.removed) parts.push(`${b.progress.removed} removed during the Batch`)
   return parts
 })
 </script>
@@ -60,7 +60,7 @@ const history = computed(() => {
       </template>
       <template v-if="batch.finishDestination">
         <span v-if="history.length" aria-hidden="true">·</span>
-        <span>Unfinished work moved to <ULink :to="`/sprints/${batch.finishDestination.name}`" class="text-primary underline underline-offset-2">{{ batch.finishDestination.batchName }}</ULink></span>
+        <span>Unfinished work moved to <ULink :to="`/batches/${batch.finishDestination.name}`" class="text-primary underline underline-offset-2">{{ batch.finishDestination.batchName }}</ULink></span>
       </template>
     </p>
   </div>

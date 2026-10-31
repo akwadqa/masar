@@ -15,7 +15,7 @@ defineShortcuts({ escape: () => { if (controller.selected.value.size && !activeT
 <template>
   <div class="flex h-full min-h-0 flex-col">
     <div class="flex flex-wrap items-center gap-2 border-b border-default px-3 py-2 sm:px-4">
-      <UInput v-model="q" icon="i-lucide-search" placeholder="Search this Sprint" size="sm" class="w-full sm:w-56" aria-label="Search this Sprint" />
+      <UInput v-model="q" icon="i-lucide-search" placeholder="Search this Batch" size="sm" class="w-full sm:w-56" aria-label="Search this Batch" />
       <span class="text-xs text-muted">Showing tasks from your Spaces.</span>
     </div>
     <BulkBar :tasks="controller.selectedTasks.value" :total="tasks?.length ?? 0" @clear="controller.clearSelection()" @select-all="controller.selectAllVisible()" />

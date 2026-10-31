@@ -14,7 +14,7 @@ const tabs = computed(() => {
   const items = []
   if (space.value?.permissions.isMember) {
     items.push(
-      { label: 'Active Sprints', icon: 'i-lucide-calendar-range', to: `${base}/sprints` },
+      { label: 'Active Batches', icon: 'i-lucide-calendar-range', to: `${base}/batches` },
       { label: 'Task List', icon: 'i-lucide-list-checks', to: `${base}/tasks` },
       { label: 'Roadmap', icon: 'i-lucide-map', to: `${base}/roadmap` },
       { label: 'Releases', icon: 'i-lucide-package', to: `${base}/releases` }
@@ -27,7 +27,7 @@ const tabs = computed(() => {
 
 // Administrators who are not members manage the Space but do not see its tasks (Q-08 default).
 watch([space, () => route.path], ([value, path]) => {
-  if (value && !value.permissions.isMember && /\/(tasks|sprints|roadmap|releases)$/.test(path)) {
+  if (value && !value.permissions.isMember && /\/(tasks|batches|roadmap|releases)$/.test(path)) {
     void navigateTo(`/spaces/${value.name}/summary`, { replace: true })
   }
 }, { immediate: true })

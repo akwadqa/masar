@@ -47,16 +47,16 @@ test.beforeAll(async ({ browser }) => {
   await manager.context().close()
 })
 
-test('Planning: a Manager creates a one-week Sprint and adds tasks from two Spaces', async ({ browser }) => {
+test('Planning: a Manager creates a one-week Batch and adds tasks from two Spaces', async ({ browser }) => {
   const manager = await asUser(browser, USERS.manager)
-  await manager.getByRole('link', { name: 'Sprints' }).click()
-  await manager.getByRole('button', { name: 'New Sprint' }).first().click()
-  await manager.getByRole('dialog').getByRole('textbox').first().fill(`${run} sprint`)
+  await manager.getByRole('link', { name: 'Batches' }).click()
+  await manager.getByRole('button', { name: 'New Batch' }).first().click()
+  await manager.getByRole('dialog').getByRole('textbox').first().fill(`${run} batch`)
   await manager.getByRole('radio', { name: /One Week/ }).check()
   await expect(manager.getByRole('dialog')).toContainText('7 days')
-  await manager.getByRole('button', { name: 'Create Sprint' }).click()
-  await expect(manager).toHaveURL(/\/sprints\/[a-z0-9]+/)
-  batch = manager.url().split('/sprints/')[1]!.split('?')[0]!
+  await manager.getByRole('button', { name: 'Create Batch' }).click()
+  await expect(manager).toHaveURL(/\/batches\/[a-z0-9]+/)
+  batch = manager.url().split('/batches/')[1]!.split('?')[0]!
   const created = await batchState(manager)
   expect(created.status).toBe('Planned')
   expect(created.durationDays).toBe(7)
@@ -70,8 +70,8 @@ test('Planning: a Manager creates a one-week Sprint and adds tasks from two Spac
   await manager.getByRole('option', { name: GAMMA() }).click()
   await manager.getByRole('checkbox', { name: `Select ${titles.g1}` }).click()
   await expect(manager.getByText('3 selected from 2 Spaces')).toBeVisible()
-  await manager.getByRole('button', { name: /Add 3 to Sprint/ }).click()
-  await expect(manager.getByText(`3 tasks added to ${run} sprint`, { exact: true })).toBeVisible()
+  await manager.getByRole('button', { name: /Add 3 to Batch/ }).click()
+  await expect(manager.getByText(`3 tasks added to ${run} batch`, { exact: true })).toBeVisible()
 
   await manager.getByRole('tab', { name: 'Tasks', exact: true }).click()
   const list = manager.getByRole('list', { name: 'Tasks' })
@@ -83,27 +83,27 @@ test('Planning: a Manager creates a one-week Sprint and adds tasks from two Spac
   await manager.context().close()
 })
 
-test('Start: the Sprint becomes Active and appears in each Space\'s Active Sprints', async ({ browser }) => {
+test('Start: the Batch becomes Active and appears in each Space\'s Active Batches', async ({ browser }) => {
   const manager = await asUser(browser, USERS.manager)
-  await manager.goto(`/masar/sprints/${batch}`)
-  await manager.getByRole('button', { name: 'Start Sprint' }).click()
-  await manager.getByRole('dialog').getByRole('button', { name: 'Start Sprint' }).click()
-  await expect(manager.getByRole('button', { name: 'Finish Sprint' })).toBeVisible()
+  await manager.goto(`/masar/batches/${batch}`)
+  await manager.getByRole('button', { name: 'Start Batch' }).click()
+  await manager.getByRole('dialog').getByRole('button', { name: 'Start Batch' }).click()
+  await expect(manager.getByRole('button', { name: 'Finish Batch' })).toBeVisible()
   const started = await batchState(manager)
   expect(started.status).toBe('Active')
   expect(started.startedBy?.name).toBe(USERS.manager)
-  await manager.goto(`/masar/spaces/${gamma}/sprints`)
-  await expect(manager.getByRole('link', { name: new RegExp(`${run} sprint, active, 0 of 1`) })).toBeVisible()
+  await manager.goto(`/masar/spaces/${gamma}/batches`)
+  await expect(manager.getByRole('link', { name: new RegExp(`${run} batch, active, 0 of 1`) })).toBeVisible()
   await manager.context().close()
 })
 
 test('Execution and progress: each Member sees and completes only their own Space\'s tasks', async ({ browser }) => {
   const member = await asUser(browser, USERS.member)
-  await member.goto(`/masar/sprints/${batch}`)
+  await member.goto(`/masar/batches/${batch}`)
   const list = member.getByRole('list', { name: 'Tasks' })
   await expect(list.getByRole('listitem', { name: titles.a1 })).toBeVisible()
   await expect(list.getByRole('listitem')).toHaveCount(2)
-  await expect(member.getByRole('button', { name: 'Start Sprint' })).toHaveCount(0)
+  await expect(member.getByRole('button', { name: 'Start Batch' })).toHaveCount(0)
   await list.getByRole('listitem', { name: titles.a1 }).getByRole('button', { name: /^Status: Open\. Change status/ }).click()
   await member.getByRole('menuitem', { name: 'Completed' }).click()
   await expect.poll(async () => (await batchState(member)).progress.completed).toBe(1)
@@ -115,7 +115,7 @@ test('Execution and progress: each Member sees and completes only their own Spac
   const outsider = await asUser(browser, USERS.outsider)
   const theirs = await batchState(outsider)
   expect([theirs.progress.completed, theirs.progress.total]).toEqual([0, 1])
-  await outsider.goto(`/masar/sprints/${batch}`)
+  await outsider.goto(`/masar/batches/${batch}`)
   await expect(outsider.getByRole('list', { name: 'Tasks' }).getByRole('listitem', { name: titles.g1 })).toBeVisible()
   const text = await pageText(outsider)
   for (const hidden of [titles.a1, titles.a2, ALPHA()]) expect(text).not.toContain(hidden)
@@ -128,31 +128,31 @@ test('Planning board: Batch boxes collapse and expand, and a task opens from its
   await manager.goto(`/masar/tasks?q=${encodeURIComponent(run)}&show=all&group=batch`)
   const box = manager.locator(`[data-batch-target="${batch}"]`)
   await expect(box.getByRole('listitem', { name: new RegExp(titles.a2) })).toBeVisible()
-  await box.getByRole('button', { name: `Collapse ${run} sprint` }).click()
+  await box.getByRole('button', { name: `Collapse ${run} batch` }).click()
   await expect(box.getByRole('listitem', { name: new RegExp(titles.a2) })).toHaveCount(0)
-  await box.getByRole('button', { name: `Expand ${run} sprint` }).click()
+  await box.getByRole('button', { name: `Expand ${run} batch` }).click()
   await box.getByRole('listitem', { name: new RegExp(titles.a1) }).getByText(titles.a1, { exact: true }).click()
   await expect(manager.getByTestId('task-title')).toHaveValue(titles.a1)
-  await expect(manager.getByTestId('task-batch')).toContainText(`${run} sprint`)
+  await expect(manager.getByTestId('task-batch')).toContainText(`${run} batch`)
   await manager.context().close()
 })
 
-test('Reassignment: tasks move between Sprint boxes on the Sprints page (Add selected)', async ({ browser }) => {
+test('Reassignment: tasks move between Batch boxes on the Batches page (Add selected)', async ({ browser }) => {
   const manager = await asUser(browser, USERS.manager)
   nextBatch = (await api<{ batch: BatchDetail }>(manager, 'masar.api.batches.create', {
     batch_name: `${run} next`, start_date: '2026-11-09', preset: 'two_weeks', client_request_id: crypto.randomUUID()
   })).body.data.batch.name
   // A cross-Space selection moves into another Batch box in one request.
-  await manager.goto('/masar/sprints')
-  const sprint = manager.locator(`[data-batch-target="${batch}"]`)
+  await manager.goto('/masar/batches')
+  const current = manager.locator(`[data-batch-target="${batch}"]`)
   const next = manager.locator(`[data-batch-target="${nextBatch}"]`)
-  for (const key of ['a2', 'g1'] as const) await sprint.getByRole('checkbox', { name: `Select ${titles[key]}` }).click()
+  for (const key of ['a2', 'g1'] as const) await current.getByRole('checkbox', { name: `Select ${titles[key]}` }).click()
   await next.getByRole('button', { name: new RegExp(`^Add 2 selected tasks to ${run} next`) }).click()
   await expect(manager.getByText('2 of 2 tasks moved.', { exact: true })).toBeVisible()
-  await expect(sprint.getByRole('listitem')).toHaveCount(1)
+  await expect(current.getByRole('listitem')).toHaveCount(1)
   // Back again (an Active Batch accepts tasks; recorded as a scope change).
   await next.getByRole('checkbox', { name: `Select ${titles.g1}` }).click()
-  await sprint.getByRole('button', { name: new RegExp(`^Add 1 selected task to ${run} sprint`) }).click()
+  await current.getByRole('button', { name: new RegExp(`^Add 1 selected task to ${run} batch`) }).click()
   await expect.poll(async () => (await api<TaskDetail>(manager, 'masar.api.tasks.get', undefined, { task: tasks.g1 })).body.data.batch?.name).toBe(batch)
   const state = await batchState(manager)
   // Two departures are recorded (a2 left; g1 left and came back as a scope change after start).
@@ -162,16 +162,16 @@ test('Reassignment: tasks move between Sprint boxes on the Sprints page (Add sel
 
 test('Finish and history: unfinished work moves on, results stay frozen', async ({ browser }) => {
   const manager = await asUser(browser, USERS.manager)
-  await manager.goto(`/masar/sprints/${batch}`)
-  await manager.getByRole('button', { name: 'Finish Sprint' }).click()
+  await manager.goto(`/masar/batches/${batch}`)
+  await manager.getByRole('button', { name: 'Finish Batch' }).click()
   const dialog = manager.getByRole('dialog')
   await expect(dialog).toContainText('1completed')
   await expect(dialog).toContainText('1unfinished')
-  await dialog.getByRole('radio', { name: /Move them to a planned Sprint/ }).check()
+  await dialog.getByRole('radio', { name: /Move them to a planned Batch/ }).check()
   await dialog.getByRole('combobox').click()
   await manager.getByRole('option', { name: new RegExp(`${run} next`) }).click()
-  await dialog.getByRole('button', { name: 'Finish Sprint' }).click()
-  await expect(manager.getByText('1 completed · 1 moved to the next Sprint.', { exact: true })).toBeVisible()
+  await dialog.getByRole('button', { name: 'Finish Batch' }).click()
+  await expect(manager.getByText('1 completed · 1 moved to the next Batch.', { exact: true })).toBeVisible()
   await expect(manager.getByRole('tab', { name: 'Results' })).toHaveCount(0) // single view, no tab strip
   const finished = await batchState(manager)
   expect(finished.status).toBe('Finished')
@@ -215,8 +215,8 @@ test('Isolation: partial and unrelated users get nothing beyond their own Spaces
   expect((await pageApi(spare, 'masar.api.batches.get', { params: { batch } })).status).toBe(404)
   const list = (await api<BatchList>(spare, 'masar.api.batches.list')).body.data
   expect(list.items.map(b => b.name)).not.toContain(batch)
-  await spare.goto(`/masar/sprints/${batch}`)
-  await expect(spare.getByText('Sprint not found')).toBeVisible()
+  await spare.goto(`/masar/batches/${batch}`)
+  await expect(spare.getByText('Batch not found')).toBeVisible()
   await spare.context().close()
 })
 
@@ -229,18 +229,18 @@ test('Mobile and keyboard: Batch pages work at 360 px; All Tasks filters by Batc
   await expect(work.getByRole('listitem', { name: titles.a2 })).toHaveCount(0)
   await member.goto(`/masar/tasks?batch=${nextBatch}&q=${encodeURIComponent(run)}`)
   await expect(work.getByRole('listitem', { name: titles.a2 })).toBeVisible()
-  await member.goto('/masar/sprints')
-  await expect(member.getByRole('link', { name: `${run} sprint` })).toBeVisible()
+  await member.goto('/masar/batches')
+  await expect(member.getByRole('link', { name: `${run} batch` })).toBeVisible()
   const overflow = await member.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)
   expect(overflow).toBeLessThanOrEqual(0)
-  await member.getByRole('link', { name: `${run} sprint` }).click()
+  await member.getByRole('link', { name: `${run} batch` }).click()
   await expect(member.getByRole('table')).toBeVisible()
   await member.context().close()
 })
 
-test('accessibility: no serious or critical axe violations on Sprint screens', async ({ browser }) => {
+test('accessibility: no serious or critical axe violations on Batch screens', async ({ browser }) => {
   const manager = await asUser(browser, USERS.manager)
-  for (const path of ['/masar/sprints', `/masar/sprints/${batch}`, `/masar/sprints/${nextBatch}`, `/masar/sprints/${nextBatch}?tab=add`, `/masar/spaces/${gamma}/sprints`, `/masar/tasks?group=sprint&show=all`]) {
+  for (const path of ['/masar/batches', `/masar/batches/${batch}`, `/masar/batches/${nextBatch}`, `/masar/batches/${nextBatch}?tab=add`, `/masar/spaces/${gamma}/batches`, `/masar/tasks?group=batch&show=all`]) {
     await manager.goto(path)
     await manager.waitForLoadState('networkidle')
     expect(await seriousViolations(manager), path).toEqual([])

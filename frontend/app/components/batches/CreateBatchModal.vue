@@ -41,7 +41,7 @@ const presetItems = [
 
 async function submit() {
   error.value = null
-  if (!batchName.value.trim()) return void (error.value = 'A Sprint needs a name.')
+  if (!batchName.value.trim()) return void (error.value = 'A Batch needs a name.')
   if (!startDate.value || !endDate.value) return void (error.value = 'Choose a start and an end date.')
   if (days.value === null) return void (error.value = 'The end date cannot be before the start date.')
   try {
@@ -53,7 +53,7 @@ async function submit() {
       clientRequestId: requestId
     })
     open.value = false
-    toast.add({ title: 'Sprint created', description: result.batch.batchName, color: 'success', icon: 'i-lucide-circle-check' })
+    toast.add({ title: 'Batch created', description: result.batch.batchName, color: 'success', icon: 'i-lucide-circle-check' })
     emit('created', result.batch.name, result.batch.batchName)
   } catch (caught) {
     error.value = (caught as Error).message
@@ -62,7 +62,7 @@ async function submit() {
 </script>
 
 <template>
-  <UModal v-model:open="open" title="New Sprint" description="A short, time-boxed plan. It can hold tasks from every Space you manage.">
+  <UModal v-model:open="open" title="New Batch" description="A short, time-boxed plan. It can hold tasks from every Space you manage.">
     <template #body>
       <form class="space-y-4" @submit.prevent="submit">
         <UAlert v-if="error" color="error" variant="subtle" icon="i-lucide-circle-alert" :title="error" role="alert" />
@@ -83,7 +83,7 @@ async function submit() {
         </p>
         <div class="flex justify-end gap-2">
           <UButton color="neutral" variant="ghost" label="Cancel" @click="open = false" />
-          <UButton type="submit" label="Create Sprint" :loading="create.pending.value" />
+          <UButton type="submit" label="Create Batch" :loading="create.pending.value" />
         </div>
       </form>
     </template>

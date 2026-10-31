@@ -9,13 +9,13 @@ class MasarBatchItem(Document):
 	def validate(self):
 		before = self.get_doc_before_save()
 		if before and frappe.db.get_value("Masar Batch", self.batch, "status") == "Finished":
-			frappe.throw(_("Participation records of a finished Sprint cannot be changed."))
+			frappe.throw(_("Participation records of a finished Batch cannot be changed."))
 		if self.task and not before:
 			space = frappe.db.get_value("Masar Task", self.task, "space")
 			if space != self.space:
 				frappe.throw(_("The participation record must use the Task's own Space."))
 		if self.current_task and self.current_task != self.task:
-			frappe.throw(_("Inconsistent current Sprint reference."))
+			frappe.throw(_("Inconsistent current Batch reference."))
 
 
 def on_doctype_update():

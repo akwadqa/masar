@@ -70,8 +70,8 @@ describe('filter panel items', () => {
     expect(featurePanelItems(features).map(item => item.value)).toEqual(['none', 'F-1'])
     expect(featurePanelItems(features)[1]!.percent).toBe(50)
     const batches = [
-      { name: 'B-1', batchName: 'Sprint 5', status: 'Active', startDate: '2026-10-25' },
-      { name: 'B-0', batchName: 'Sprint 4', status: 'Finished', startDate: '2026-10-11' }
+      { name: 'B-1', batchName: 'Batch 5', status: 'Active', startDate: '2026-10-25' },
+      { name: 'B-0', batchName: 'Batch 4', status: 'Finished', startDate: '2026-10-11' }
     ] as unknown as Batch[]
     expect(batchPanelItems(batches).map(item => item.value)).toEqual(['any', 'B-1', 'none'])
   })

@@ -111,7 +111,7 @@ def _assignees_by_task(task_names: list[str]) -> dict[str, list[str]]:
 
 
 DUE_FILTERS = ("overdue", "today", "week", "none")
-# "manual" stays for Sprint boxes; the Task Lists offer only "recently_updated" and "created".
+# "manual" stays for Batch boxes; the Task Lists offer only "recently_updated" and "created".
 SORTS = ("manual", "recently_updated", "due_date", "created")
 FAR_FUTURE = "9999-12-31"
 

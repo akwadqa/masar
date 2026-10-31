@@ -59,7 +59,7 @@ function onDrop(event: DragEvent) {
   <section
     class="flex flex-col gap-2 rounded-card px-3 py-2.5 transition-colors"
     :class="hovered ? 'bg-primary/10 ring-2 ring-primary' : 'bg-elevated/70'"
-    :aria-label="batch ? `Sprint ${title}` : 'Backlog: tasks not in a Sprint'"
+    :aria-label="batch ? `Batch ${title}` : 'Backlog: tasks not in a Batch'"
     :data-batch-target="batch?.name ?? 'backlog'"
     @dragover="onDragOver"
     @dragleave.self="hovered = false"
@@ -114,12 +114,12 @@ function onDrop(event: DragEvent) {
       <slot name="actions" />
       <UDropdownMenu
         v-if="batch && canDrop && batch.status === 'Planned'"
-        :items="[{ label: 'Delete Sprint', icon: 'i-lucide-trash-2', color: 'error' as const, onSelect: () => emit('delete') }]"
+        :items="[{ label: 'Delete Batch', icon: 'i-lucide-trash-2', color: 'error' as const, onSelect: () => emit('delete') }]"
         :content="{ align: 'end' }"
       >
         <UButton icon="i-lucide-ellipsis" color="neutral" variant="ghost" size="sm" square :aria-label="`More actions for ${title}`" />
       </UDropdownMenu>
-      <UButton v-if="batch" :to="`/sprints/${batch.name}`" size="sm" color="neutral" variant="ghost" icon="i-lucide-arrow-up-right" :aria-label="`Open Sprint ${title}`" />
+      <UButton v-if="batch" :to="`/batches/${batch.name}`" size="sm" color="neutral" variant="ghost" icon="i-lucide-arrow-up-right" :aria-label="`Open Batch ${title}`" />
     </header>
     <template v-if="!collapsed">
       <slot>
@@ -141,7 +141,7 @@ function onDrop(event: DragEvent) {
           />
         </div>
         <p v-else class="rounded-(--ui-radius) border border-dashed border-accented px-4 py-2.5 text-center text-sm text-muted">
-          {{ canDrop ? 'Nothing in this Sprint yet. Plan it by dragging tasks into it, or select tasks and choose “Add selected”.' : 'No tasks in this Sprint match the filters.' }}
+          {{ canDrop ? 'Nothing in this Batch yet. Plan it by dragging tasks into it, or select tasks and choose “Add selected”.' : 'No tasks in this Batch match the filters.' }}
         </p>
       </slot>
     </template>

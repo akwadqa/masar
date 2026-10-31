@@ -16,7 +16,7 @@ const emit = defineEmits<{ select: [value: string | null], close: [], create: []
 const TITLES: Record<FilterPanelKind, { title: string, create: string }> = {
   feature: { title: 'Features', create: 'Create Feature' },
   release: { title: 'Versions', create: 'Create Version' },
-  batch: { title: 'Sprints', create: 'Create Sprint' }
+  batch: { title: 'Batches', create: 'Create Batch' }
 }
 const query = ref('')
 const visible = computed(() => {

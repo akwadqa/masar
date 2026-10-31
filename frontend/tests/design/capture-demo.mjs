@@ -37,12 +37,12 @@ const spaces = Object.fromEntries((await api(omar, 'spaces.list', { scope: 'all'
 const pearl = spaces['Pearl Commerce Platform']
 const tasks = (await api(omar, 'tasks.list', { space: pearl })).items
 const rich = tasks.find(t => t.actionCount >= 3 && t.commentCount >= 1) ?? tasks[0]
-const sprint = (await api(omar, 'batches.list', {})).items.find(b => b.batchName === 'Platform Delivery — Sprint 05')
+const batch = (await api(omar, 'batches.list', {})).items.find(b => b.batchName === 'Platform Delivery — Sprint 05')
 await shot(omar, 'd-spaces', '/spaces?scope=all&status=all', 'a[aria-label]')
 await shot(omar, 'd-task-list', `/spaces/${pearl}/tasks`, '[role="listitem"]')
 await shot(omar, 'd-task-panel', `/spaces/${pearl}/tasks?task=${rich.name}`, '[data-testid="task-title"]')
 await shot(omar, 'd-roadmap', `/spaces/${pearl}/roadmap`, 'text=Now')
-await shot(omar, 'd-batch', `/batches/${sprint.name}`, 'text=Sprint 05')
+await shot(omar, 'd-batch', `/batches/${batch.name}`, 'text=Sprint 05')
 const khalid = await signIn('khalid', desktop)
 await shot(khalid, 'd-my-day', '/my-day', '[role="listitem"]')
 await shot(omar, 'd-all-tasks', '/tasks', '[role="listitem"]')

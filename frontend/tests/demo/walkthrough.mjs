@@ -55,10 +55,10 @@ await shot(omar, 'b-portal-tasks', `/spaces/${portal}/tasks`, '[role="listitem"]
 await shot(omar, 'b-portal-roadmap', `/spaces/${portal}/roadmap`, 'text=Now')
 await shot(omar, 'b-portal-releases', `/spaces/${portal}/releases`, 'text=v1.2')
 const batches = (await api(omar, 'batches.list', {})).data.items
-const sprint = batches.find(b => b.batchName === 'Platform Delivery — Sprint 05')
-check('B: Manager owns the active cross-Space Batch', sprint?.status === 'Active' && sprint?.isOwner === true)
-await shot(omar, 'b-sprint05-manager', `/batches/${sprint.name}`, 'text=Sprint 05')
-const omarSprintTasks = (await api(omar, 'batches.tasks', { batch: sprint.name })).data.items
+const batch = batches.find(b => b.batchName === 'Platform Delivery — Sprint 05')
+check('B: Manager owns the active cross-Space Batch', batch?.status === 'Active' && batch?.isOwner === true)
+await shot(omar, 'b-batch05-manager', `/batches/${batch.name}`, 'text=Sprint 05')
+const omarBatchTasks = (await api(omar, 'batches.tasks', { batch: batch.name })).data.items
 
 // C. Member: My Work, a Task with Actions, comments and Worklog.
 const khalid = await signIn('khalid')
@@ -71,13 +71,13 @@ check('C: Task details open for an assigned Task', (await khalid.getByTestId('ta
 
 // D. Partial visibility in the cross-Space Batch.
 const hessa = await signIn('hessa')
-const hessaSprint = await api(hessa, 'batches.tasks', { batch: sprint.name })
-const hessaSpaces = new Set((hessaSprint.data?.items ?? []).map(t => t.space))
+const hessaBatch = await api(hessa, 'batches.tasks', { batch: batch.name })
+const hessaSpaces = new Set((hessaBatch.data?.items ?? []).map(t => t.space))
 const supplier = space['Supplier Onboarding System']
-check('D: Hessa sees the Batch but only her Spaces\' Tasks', hessaSprint.status === 200 && !hessaSpaces.has(supplier) && hessaSprint.data.items.length < omarSprintTasks.length,
-  `${hessaSprint.data?.items.length} of ${omarSprintTasks.length}`)
+check('D: Hessa sees the Batch but only her Spaces\' Tasks', hessaBatch.status === 200 && !hessaSpaces.has(supplier) && hessaBatch.data.items.length < omarBatchTasks.length,
+  `${hessaBatch.data?.items.length} of ${omarBatchTasks.length}`)
 check('D: Hessa cannot open Supplier Onboarding', (await api(hessa, 'spaces.get', { space: supplier })).status === 404)
-await shot(hessa, 'd-sprint05-partial', `/batches/${sprint.name}`, 'text=Sprint 05')
+await shot(hessa, 'd-batch05-partial', `/batches/${batch.name}`, 'text=Sprint 05')
 const lina = await signIn('lina')
 const linaSpaces = (await api(lina, 'spaces.list', {})).data
 check('D: Lina sees only IT Service Desk Improvement', linaSpaces.length === 1 && linaSpaces[0].title === 'IT Service Desk Improvement')

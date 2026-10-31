@@ -129,7 +129,7 @@ test('C: F and V open the Feature and Version panels, but not while typing', asy
   await manager.context().close()
 })
 
-test('D: All Tasks keeps a selection across filters and plans it into a Sprint atomically, by click or drag', async ({ browser }) => {
+test('D: All Tasks keeps a selection across filters and plans it into a Batch atomically, by click or drag', async ({ browser }) => {
   const manager = await asUser(browser, USERS.manager)
   const batch = (await api<{ batch: BatchDetail }>(manager, 'masar.api.batches.create', {
     batch_name: `${run} plan`, start_date: '2026-11-16', preset: 'two_weeks', client_request_id: crypto.randomUUID()
@@ -255,7 +255,7 @@ test('C2: the Task List shows Status, Space, priority, due date and people for e
   await manager.context().close()
 })
 
-test('I: people, Feature, Release and Labels change in Task details and persist; Sprint is not chosen there', async ({ browser }) => {
+test('I: people, Feature, Release and Labels change in Task details and persist; Batch is not chosen there', async ({ browser }) => {
   const manager = await asUser(browser, USERS.manager)
   const task = await createTask(manager, `${run} properties`)
   const feature = (await api<FeatureDetail>(manager, 'masar.api.features.create', { space: alpha, title: `${run} chip feature`, roadmap: 'Next' })).body.data.name
@@ -272,7 +272,7 @@ test('I: people, Feature, Release and Labels change in Task details and persist;
   await manager.getByRole('button', { name: new RegExp(`^${run} chip feature Next$`) }).click()
   await manager.getByTestId('task-release').click()
   await manager.getByRole('button', { name: new RegExp(`^${run}-chip Planned$`) }).click()
-  await expect(manager.getByRole('combobox', { name: 'Sprint' })).toHaveCount(0)
+  await expect(manager.getByRole('combobox', { name: 'Batch' })).toHaveCount(0)
   await manager.getByRole('button', { name: 'Labels' }).click()
   await manager.getByRole('option', { name: `${run}-chip` }).click()
   await manager.keyboard.press('Escape')

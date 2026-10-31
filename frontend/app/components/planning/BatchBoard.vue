@@ -8,8 +8,8 @@ type Controller = ReturnType<typeof useTaskListController>
 // Batches page: one full-width box per current Batch with its Task rows inside, then the Backlog.
 // Rows move between boxes by drag and drop, or by selecting them and choosing "Add selected"
 // (batches.move_tasks, all or nothing). A Planned Batch can be deleted; its Tasks return to the Backlog.
-// Batches are called Sprints in the interface (client revision 4). While no Sprint is current, a
-// "Plan your Sprint" area leads the board; tasks dropped on it join the Sprint created for them.
+// The interface calls them Batches again (Sprints in client revision 4, reverted 2026-10-31). While
+// no Batch is current, a "Plan your Batch" area leads the board; tasks dropped on it join the Batch created for them.
 const props = defineProps<{
   tasks: TaskListRow[]
   controller: Controller
@@ -30,7 +30,7 @@ const { moveTasks, remove } = useBatchMutations()
 const movingTo = ref<string | null>(null)
 const deleting = ref<Batch | null>(null)
 const creating = ref(false)
-// Tasks dropped on the planning area join the Sprint created for them.
+// Tasks dropped on the planning area join the Batch created for them.
 const pendingDrop = ref<string[] | null>(null)
 
 const manageableNames = computed(() => new Set((manageable.value?.items ?? []).map(batch => batch.name)))
@@ -119,7 +119,7 @@ function toggleBox(names: string[], on: boolean) {
 
 <template>
   <div class="flex flex-col gap-4">
-    <SprintPlanZone v-if="showPlanZone" :can-create="canCreate" @create="startPlanning" />
+    <BatchPlanZone v-if="showPlanZone" :can-create="canCreate" @create="startPlanning" />
     <BatchContainer
       v-for="box in boxes"
       :key="box.batch.name"
@@ -149,7 +149,7 @@ function toggleBox(names: string[], on: boolean) {
       @select-all="toggleBox"
     >
       <template #actions>
-        <UButton v-if="canCreate && !showPlanZone" icon="i-lucide-plus" label="Create Sprint" color="neutral" variant="outline" size="sm" @click="startPlanning()" />
+        <UButton v-if="canCreate && !showPlanZone" icon="i-lucide-plus" label="Create Batch" color="neutral" variant="outline" size="sm" @click="startPlanning()" />
       </template>
       <div v-if="backlog.length" class="overflow-hidden rounded-(--ui-radius) border border-default bg-default" :class="pageScroll ? 'list-scroll:h-[60vh] list-scroll:min-h-80' : 'h-[60vh] min-h-80'">
         <TaskList
@@ -173,21 +173,21 @@ function toggleBox(names: string[], on: boolean) {
         />
       </div>
       <p v-else class="rounded-(--ui-radius) border border-dashed border-accented px-4 py-3 text-center text-sm text-muted">
-        {{ emptyHint ?? 'Every task is in a Sprint.' }}
+        {{ emptyHint ?? 'Every task is in a Batch.' }}
       </p>
     </BatchContainer>
 
     <CreateBatchModal v-model:open="creating" @created="onCreated" />
     <UModal
       :open="!!deleting"
-      :title="`Delete ${deleting?.batchName ?? 'this Sprint'}?`"
-      description="The Sprint is removed. Its tasks are not deleted: they return to the Backlog. This cannot be undone."
+      :title="`Delete ${deleting?.batchName ?? 'this Batch'}?`"
+      description="The Batch is removed. Its tasks are not deleted: they return to the Backlog. This cannot be undone."
       @update:open="(value) => { if (!value) deleting = null }"
     >
       <template #footer>
         <div class="flex w-full justify-end gap-2">
           <UButton color="neutral" variant="ghost" label="Cancel" @click="deleting = null" />
-          <UButton color="error" label="Delete Sprint" :loading="remove.pending.value" @click="confirmDelete" />
+          <UButton color="error" label="Delete Batch" :loading="remove.pending.value" @click="confirmDelete" />
         </div>
       </template>
     </UModal>

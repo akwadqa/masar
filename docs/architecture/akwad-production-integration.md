@@ -61,7 +61,7 @@ https://erp.akwad.qa            (existing Frappe site, operated by Akwad)
 - Contents: the Frappe app (`app/masar`, installable with `bench get-app`), a reproducible archive,
   manifest, checksums, status and guides (INSTALL, UPGRADE, ROLLBACK, COMPATIBILITY, VALIDATION,
   STAGING-TEST-PLAN).
-- Excluded: tests, the demo dataset generator, QA fixture tooling, the one-off Sprint reset, any database
+- Excluded: tests, the demo dataset generator, QA fixture tooling, the one-off Batch reset, any database
   content, users, credentials, site configuration, logs, backups, caches, virtual environments and
   development history. DocType schemas, patches, roles and the built Workspace are included.
 - States: `CANDIDATE` → `VALIDATED_LOCALLY` → `STAGING_VERIFIED` → `PRODUCTION_READY`; `BLOCKED` at any time.

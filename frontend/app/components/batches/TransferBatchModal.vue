@@ -30,7 +30,7 @@ async function submit() {
   try {
     const batch = await transfer.execute({ batch: props.batch, newOwner: newOwner.value })
     open.value = false
-    toast.add({ title: 'Sprint transferred', description: `${batch.owner.fullName} now owns ${batch.batchName}.`, color: 'success', icon: 'i-lucide-check' })
+    toast.add({ title: 'Batch transferred', description: `${batch.owner.fullName} now owns ${batch.batchName}.`, color: 'success', icon: 'i-lucide-check' })
   } catch (caught) {
     error.value = (caught as Error).message
   }
@@ -38,12 +38,12 @@ async function submit() {
 </script>
 
 <template>
-  <UModal v-model:open="open" title="Transfer Sprint" description="The new owner must manage every Space whose tasks are in this Sprint.">
+  <UModal v-model:open="open" title="Transfer Batch" description="The new owner must manage every Space whose tasks are in this Batch.">
     <template #body>
       <div class="space-y-4">
         <UAlert v-if="error" color="error" variant="subtle" icon="i-lucide-circle-alert" :title="error" role="alert" />
         <USelectMenu v-model="newOwner" :items="items" value-key="value" :loading="loading" placeholder="Choose the new owner" class="w-full" aria-label="New owner" />
-        <p v-if="!loading && !items.length && !error" class="text-sm text-muted">Nobody else manages all of this Sprint's Spaces.</p>
+        <p v-if="!loading && !items.length && !error" class="text-sm text-muted">Nobody else manages all of this Batch's Spaces.</p>
         <div class="flex justify-end gap-2">
           <UButton color="neutral" variant="ghost" label="Cancel" @click="open = false" />
           <UButton label="Transfer" :disabled="!newOwner" :loading="transfer.pending.value" @click="submit" />

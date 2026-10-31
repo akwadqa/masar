@@ -38,24 +38,24 @@ const destinationItems = computed(() => (preview.value?.destinations ?? []).map(
 const carryItems = computed(() => [
   { label: 'Return them to the Backlog', value: 'Unbatched', description: 'They stay open and can be planned again later.' },
   {
-    label: 'Move them to a planned Sprint',
+    label: 'Move them to a planned Batch',
     value: 'Batch',
-    description: destinationItems.value.length ? 'They become part of the chosen Sprint.' : 'You have no other planned Sprint.',
+    description: destinationItems.value.length ? 'They become part of the chosen Batch.' : 'You have no other planned Batch.',
     disabled: !destinationItems.value.length
   }
 ])
 
 async function confirm() {
   error.value = null
-  if (carry.value === 'Batch' && !destination.value) return void (error.value = 'Choose the planned Sprint for unfinished tasks.')
+  if (carry.value === 'Batch' && !destination.value) return void (error.value = 'Choose the planned Batch for unfinished tasks.')
   try {
     const result = await finish.execute({ batch: props.batch.name, carry: carry.value, destination: destination.value, requestId })
     open.value = false
-    const moved = result.carriedOver ? `${result.carriedOver} moved to the next Sprint` : `${result.returned} returned to the Backlog`
-    toast.add({ title: 'Sprint finished', description: `${result.completed} completed · ${moved}.`, color: 'success', icon: 'i-lucide-flag' })
+    const moved = result.carriedOver ? `${result.carriedOver} moved to the next Batch` : `${result.returned} returned to the Backlog`
+    toast.add({ title: 'Batch finished', description: `${result.completed} completed · ${moved}.`, color: 'success', icon: 'i-lucide-flag' })
   } catch (caught) {
     const apiError = caught as MasarApiError
-    error.value = apiError.kind === 'conflict' ? 'This Sprint was finished by someone else. The latest state is shown.' : apiError.message
+    error.value = apiError.kind === 'conflict' ? 'This Batch was finished by someone else. The latest state is shown.' : apiError.message
   }
 }
 </script>
@@ -87,8 +87,8 @@ async function confirm() {
           <UFormField label="What happens to the unfinished tasks?">
             <URadioGroup v-model="carry" :items="carryItems" variant="card" />
           </UFormField>
-          <UFormField v-if="carry === 'Batch'" label="Planned Sprint" required>
-            <USelect v-model="destination" :items="destinationItems" placeholder="Choose a Sprint" class="w-full" />
+          <UFormField v-if="carry === 'Batch'" label="Planned Batch" required>
+            <USelect v-model="destination" :items="destinationItems" placeholder="Choose a Batch" class="w-full" />
           </UFormField>
           <UAlert
             v-if="preview.unfinishedInClosedSpaces && carry === 'Batch'"
@@ -106,7 +106,7 @@ async function confirm() {
     <template #footer>
       <div class="flex w-full justify-end gap-2">
         <UButton color="neutral" variant="ghost" label="Cancel" @click="open = false" />
-        <UButton icon="i-lucide-flag" label="Finish Sprint" :disabled="!preview" :loading="finish.pending.value" @click="confirm" />
+        <UButton icon="i-lucide-flag" label="Finish Batch" :disabled="!preview" :loading="finish.pending.value" @click="confirm" />
       </div>
     </template>
   </UModal>

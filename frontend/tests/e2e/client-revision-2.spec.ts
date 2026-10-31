@@ -58,7 +58,7 @@ test.beforeAll(async ({ browser }) => {
   expect((await api(manager, 'masar.api.tasks.add_assignee', { task: tasks.owned, user: USERS.member })).status).toBe(200)
   // The creator owns a new Task (client revision 5): hand it over to the member.
   expect((await api(manager, 'masar.api.tasks.set_owner', { task: tasks.owned, user: USERS.member })).status).toBe(200)
-  const created = await api<{ batch: Batch }>(manager, 'masar.api.batches.create', { batch_name: `${run} Sprint`, start_date: isoDay(1), end_date: isoDay(14), client_request_id: crypto.randomUUID() })
+  const created = await api<{ batch: Batch }>(manager, 'masar.api.batches.create', { batch_name: `${run} Batch`, start_date: isoDay(1), end_date: isoDay(14), client_request_id: crypto.randomUUID() })
   expect(created.status).toBe(200)
   batch = created.body.data.batch.name
   await manager.context().close()
@@ -176,14 +176,14 @@ test('S5: All Tasks: Batch boxes hold their Task rows; drag a row into a Batch, 
 
   // Without dragging: select a row of another Space and use "Add selected".
   await backlog.locator(`[data-task="${tasks.pick}"]`).getByRole('checkbox').click()
-  await box.getByRole('button', { name: new RegExp(`^Add 1 selected task to ${run} Sprint`) }).click()
+  await box.getByRole('button', { name: new RegExp(`^Add 1 selected task to ${run} Batch`) }).click()
   await expect(box.locator(`[data-task="${tasks.pick}"]`)).toBeVisible()
 
   // The box header checkbox selects every Task of that box (as in the client's reference).
-  await box.getByRole('checkbox', { name: `Select all tasks in ${run} Sprint` }).click()
+  await box.getByRole('checkbox', { name: `Select all tasks in ${run} Batch` }).click()
   await expect(manager.getByText(/^2 selected$/)).toBeVisible()
-  await box.getByRole('checkbox', { name: `Select all tasks in ${run} Sprint` }).click()
-  await expect(backlog.getByRole('button', { name: 'Create Sprint' })).toBeVisible()
+  await box.getByRole('checkbox', { name: `Select all tasks in ${run} Batch` }).click()
+  await expect(backlog.getByRole('button', { name: 'Create Batch' })).toBeVisible()
 
   // And back to the Backlog by dragging.
   await dragRow(manager, tasks.drag, 'backlog')

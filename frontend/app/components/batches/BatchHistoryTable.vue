@@ -26,7 +26,7 @@ const columns: TableColumn<BatchHistoryRow>[] = [
     <StatePanel
       v-else-if="status !== 'pending' && !visibleRows.length"
       icon="i-lucide-history"
-      :title="finished ? 'No tasks from your Spaces took part' : 'No task left this Sprint yet'"
+      :title="finished ? 'No tasks from your Spaces took part' : 'No task left this Batch yet'"
     />
     <UTable v-else :data="visibleRows" :columns="columns" :loading="status === 'pending'" class="min-w-[40rem]" :ui="{ td: 'py-2', th: 'py-2' }">
       <template #task-cell="{ row }">
@@ -39,7 +39,7 @@ const columns: TableColumn<BatchHistoryRow>[] = [
       <template #outcome-cell="{ row }">
         <div class="flex flex-wrap items-center gap-1.5">
           <UBadge :color="outcomeColor[row.original.outcome]" variant="subtle" size="sm" :label="row.original.outcome" />
-          <ULink v-if="row.original.carriedTo" :to="`/sprints/${row.original.carriedTo.name}`" class="text-xs text-primary">→ {{ row.original.carriedTo.batchName }}</ULink>
+          <ULink v-if="row.original.carriedTo" :to="`/batches/${row.original.carriedTo.name}`" class="text-xs text-primary">→ {{ row.original.carriedTo.batchName }}</ULink>
           <span v-if="row.original.completedAtFinish === false && row.original.outcome !== 'Removed'" class="text-xs text-muted">open at finish</span>
         </div>
       </template>

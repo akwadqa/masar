@@ -263,7 +263,7 @@ defineExpose({ focusCreate })
             v-else-if="row.kind === 'group'"
             class="flex h-12 items-center gap-2 border-b border-default bg-elevated/60 px-2 text-sm sm:px-3"
             role="listitem"
-            :aria-label="`${row.batch ? `Sprint ${row.batch.title}` : 'Not in a Sprint'}, ${row.count} ${row.count === 1 ? 'task' : 'tasks'}${row.collapsed ? ', collapsed' : ''}`"
+            :aria-label="`${row.batch ? `Batch ${row.batch.title}` : 'Not in a Batch'}, ${row.count} ${row.count === 1 ? 'task' : 'tasks'}${row.collapsed ? ', collapsed' : ''}`"
             :data-group="row.batch?.name ?? 'none'"
           >
             <UButton
@@ -273,14 +273,14 @@ defineExpose({ focusCreate })
               size="xs"
               square
               :aria-expanded="row.collapsed ? 'false' : 'true'"
-              :aria-label="`${row.collapsed ? 'Expand' : 'Collapse'} ${row.batch ? row.batch.title : 'tasks without a Sprint'}`"
+              :aria-label="`${row.collapsed ? 'Expand' : 'Collapse'} ${row.batch ? row.batch.title : 'tasks without a Batch'}`"
               @click="toggleGroup(row.batch?.name ?? 'none')"
             />
             <UIcon :name="row.batch ? 'i-lucide-calendar-range' : 'i-lucide-inbox'" class="size-4 shrink-0 text-muted" />
-            <ULink v-if="row.batch" :to="`/sprints/${row.batch.name}`" class="min-w-0 truncate font-semibold text-highlighted hover:underline">
+            <ULink v-if="row.batch" :to="`/batches/${row.batch.name}`" class="min-w-0 truncate font-semibold text-highlighted hover:underline">
               {{ row.batch.title }}
             </ULink>
-            <span v-else class="font-semibold text-highlighted">Not in a Sprint</span>
+            <span v-else class="font-semibold text-highlighted">Not in a Batch</span>
             <BatchStatusBadge v-if="row.batch" :status="row.batch.status" size="sm" />
             <span class="ms-auto shrink-0 text-xs tabular-nums text-muted">{{ row.count }} {{ row.count === 1 ? 'task' : 'tasks' }}</span>
           </div>

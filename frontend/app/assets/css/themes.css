@@ -57,7 +57,7 @@
   --color-filter-important: var(--masar-filter-important);
   --color-filter-release: var(--masar-filter-release);
   --color-filter-feature: var(--masar-filter-feature);
-  --color-filter-sprint: var(--masar-filter-sprint);
+  --color-filter-batch: var(--masar-filter-batch);
   --color-filter-add: var(--masar-filter-add);
   --color-filter-status: var(--masar-filter-status);
   --color-filter-assignee: var(--masar-filter-assignee);
@@ -108,7 +108,7 @@
   /* Filter toggle icons (client revision 4): soft colours, the same in every theme, so the gray
      filter bar does not read as greyscale. Important keeps the saffron of its meaning. */
   --masar-filter-mine: #0284c7; --masar-filter-important: #d97706; --masar-filter-release: #7c3aed;
-  --masar-filter-feature: #059669; --masar-filter-sprint: #4f46e5;
+  --masar-filter-feature: #059669; --masar-filter-batch: #4f46e5;
   /* Filter chip fields and the "+ Filter" button (client request 2026-10-31): one hue per field,
      at least 3:1 against the bar for icons. */
   --masar-filter-add: #c026d3; --masar-filter-status: #0d9488; --masar-filter-assignee: #2563eb;
@@ -140,7 +140,7 @@
   --masar-avatar-ink-mix: 100%;
   --masar-avatar-ink-base: #ffffff;
   --masar-filter-mine: #38bdf8; --masar-filter-important: #fbbf24; --masar-filter-release: #a78bfa;
-  --masar-filter-feature: #34d399; --masar-filter-sprint: #818cf8;
+  --masar-filter-feature: #34d399; --masar-filter-batch: #818cf8;
   --masar-filter-add: #e879f9; --masar-filter-status: #2dd4bf; --masar-filter-assignee: #60a5fa;
   --masar-filter-owner: #fb923c; --masar-filter-priority: #f87171; --masar-filter-label: #f472b6;
   --masar-filter-space: #a3e635;

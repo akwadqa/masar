@@ -62,10 +62,10 @@ const overdue = computed(() => props.task.status === 'Overdue')
       </template>
     </UPopover>
 
-    <!-- max-w-full (QA-D11): a long Sprint name ends in an ellipsis instead of running past a phone screen. -->
+    <!-- max-w-full (QA-D11): a long Batch name ends in an ellipsis instead of running past a phone screen. -->
     <UButton
       v-if="task.batch"
-      :to="`/sprints/${task.batch.name}`"
+      :to="`/batches/${task.batch.name}`"
       color="neutral"
       variant="soft"
       size="md"
@@ -73,7 +73,7 @@ const overdue = computed(() => props.task.status === 'Overdue')
       trailing-icon="i-lucide-arrow-up-right"
       :class="[CHIP, 'max-w-full']"
       :label="task.batch.title"
-      :aria-label="`Sprint: ${task.batch.title}. Open the Sprint`"
+      :aria-label="`Batch: ${task.batch.title}. Open the Batch`"
       data-testid="task-batch"
     />
 

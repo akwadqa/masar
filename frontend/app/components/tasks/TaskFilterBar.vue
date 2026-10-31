@@ -62,7 +62,7 @@ function clearAll() {
 const PANELS: Record<FilterPanelKind, { label: string, icon: string, tone: string, key?: string, param: string }> = {
   feature: { label: 'Features', icon: 'i-lucide-map', tone: 'text-filter-feature', key: 'F', param: 'feature' },
   release: { label: 'Versions', icon: 'i-lucide-package', tone: 'text-filter-release', key: 'V', param: 'release' },
-  batch: { label: 'Sprints', icon: 'i-lucide-calendar-range', tone: 'text-filter-sprint', param: 'batch' }
+  batch: { label: 'Batches', icon: 'i-lucide-calendar-range', tone: 'text-filter-batch', param: 'batch' }
 }
 const activePanelChips = computed(() => (Object.keys(PANELS) as FilterPanelKind[]).flatMap((kind) => {
   const value = props.filters[kind]
@@ -145,17 +145,17 @@ const toggleLabel = computed(() => (props.singleRow ? 'hidden @[87.5rem]:inline'
         <UKbd v-if="PANELS[kind].key" :value="PANELS[kind].key" variant="soft" class="hidden sm:inline-flex" />
       </UButton>
       <slot name="tools" />
-      <UTooltip v-if="groupable" :text="singleRow ? 'Group by Sprint' : undefined" :disabled="!singleRow">
+      <UTooltip v-if="groupable" :text="singleRow ? 'Group by Batch' : undefined" :disabled="!singleRow">
         <UButton
           color="neutral"
           icon="i-lucide-rows-3"
           :variant="grouped ? 'soft' : 'outline'"
-          :ui="{ leadingIcon: 'text-filter-sprint' }"
+          :ui="{ leadingIcon: 'text-filter-batch' }"
           :aria-pressed="grouped"
-          aria-label="Group by Sprint"
-          @click="emit('set', { group: grouped ? null : 'sprint' })"
+          aria-label="Group by Batch"
+          @click="emit('set', { group: grouped ? null : 'batch' })"
         >
-          <span :class="toggleLabel">Group by Sprint</span>
+          <span :class="toggleLabel">Group by Batch</span>
         </UButton>
       </UTooltip>
       <span

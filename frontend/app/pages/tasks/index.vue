@@ -2,7 +2,7 @@
 import type { TaskListRow, TaskSort } from '~/types/api'
 
 // All Tasks: every Task the user can see across their Spaces, as a list (client revision 3). "Group by
-// Sprint" turns it into the planning board: a box per current Sprint with its Task rows and the Backlog,
+// Batch" turns it into the planning board: a box per current Batch with its Task rows and the Backlog,
 // where rows move by drag and drop or "Add selected". Versions and Features belong to one Space, so
 // they are not offered here (client revision 4); the filters fit one row. Labels belong to one Space too:
 // the label filter appears once a single Space is chosen. The selection survives filter changes.
@@ -21,8 +21,9 @@ const { data: owners } = useTaskOwners(() => ({ spaces: scope.value }))
 const { data: assignees } = useTaskAssignees(() => ({ spaces: scope.value }))
 const { data: manageable } = useManageableBatches()
 const controller = useTaskListController(tasks, { persistentSelection: true })
-// "batch" is the value of links made before the rename to Sprints (client revision 4).
-const grouped = computed(() => route.query.group === 'sprint' || route.query.group === 'batch')
+// "sprint" is the value of links made while Batches were called Sprints (client revision 4, reverted
+// 2026-10-31).
+const grouped = computed(() => route.query.group === 'batch' || route.query.group === 'sprint')
 
 const { activeTask, openTask: showTask, closeTask } = useTaskPanel()
 const createBatchOpen = ref(false)
@@ -42,7 +43,7 @@ defineShortcuts({ escape: () => { if (controller.selected.value.size && !activeT
         </template>
         <template #right>
           <span v-if="tasks?.length" class="text-sm text-muted">{{ tasks.length }} {{ tasks.length === 1 ? 'task' : 'tasks' }}</span>
-          <UButton v-if="manageable?.permissions.canCreate" icon="i-lucide-plus" label="New Sprint" color="neutral" variant="outline" @click="createBatchOpen = true" />
+          <UButton v-if="manageable?.permissions.canCreate" icon="i-lucide-plus" label="New Batch" color="neutral" variant="outline" @click="createBatchOpen = true" />
           <NotificationBell placement="navbar" class="lg:hidden" />
         </template>
       </UDashboardNavbar>
@@ -93,7 +94,7 @@ defineShortcuts({ escape: () => { if (controller.selected.value.size && !activeT
               :batch-filter="filters.batch"
               :scroll-key="`all-tasks:${JSON.stringify(filters)}`"
               page-scroll
-              :empty-hint="activeCount ? 'No tasks outside a Sprint match these filters.' : 'Every task is in a Sprint.'"
+              :empty-hint="activeCount ? 'No tasks outside a Batch match these filters.' : 'Every task is in a Batch.'"
               @open="openTask"
               @filter="(batch) => setQuery({ batch })"
               @refresh="refresh()"

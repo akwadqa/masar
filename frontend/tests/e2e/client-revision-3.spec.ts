@@ -33,7 +33,7 @@ test.beforeAll(async ({ browser }) => {
   for (const key of ['planned', 'kept', 'loose']) {
     tasks[key] = (await api<{ task: TaskDetail }>(manager, 'masar.api.tasks.create', { space: alpha, title: `${run} ${key}`, client_request_id: crypto.randomUUID() })).body.data.task.name
   }
-  batch = (await api<{ batch: Batch }>(manager, 'masar.api.batches.create', { batch_name: `${run} Sprint`, start_date: isoDay(2), end_date: isoDay(15), client_request_id: crypto.randomUUID() })).body.data.batch.name
+  batch = (await api<{ batch: Batch }>(manager, 'masar.api.batches.create', { batch_name: `${run} Batch`, start_date: isoDay(2), end_date: isoDay(15), client_request_id: crypto.randomUUID() })).body.data.batch.name
   expect((await api(manager, 'masar.api.batches.move_tasks', { tasks: [tasks.planned], batch, expected: { [tasks.planned]: null } })).status).toBe(200)
   await manager.context().close()
 })
@@ -54,43 +54,43 @@ test('R1: Browse all Spaces opens a Spaces panel with search, icons and View all
   await manager.context().close()
 })
 
-test('R5–R8: Sprints page shows Sprints with their tasks; Space lists have no Sprint tools; All Tasks is a list with Group by Sprint', async ({ browser }) => {
+test('R5–R8: Batches page shows Batches with their tasks; Space lists have no Batch tools; All Tasks is a list with Group by Batch', async ({ browser }) => {
   const manager = await asUser(browser, USERS.manager)
-  await manager.goto('/masar/sprints')
+  await manager.goto('/masar/batches')
   const box = manager.locator(`[data-batch-target="${batch}"]`)
   await expect(box.locator(`[data-task="${tasks.planned}"]`)).toBeVisible()
   await manager.goto(`/masar/spaces/${alpha}/tasks`)
-  await expect(manager.getByRole('button', { name: 'Sprints panel' })).toHaveCount(0)
-  await expect(manager.getByRole('button', { name: 'Group by Sprint' })).toHaveCount(0)
+  await expect(manager.getByRole('button', { name: 'Batches panel' })).toHaveCount(0)
+  await expect(manager.getByRole('button', { name: 'Group by Batch' })).toHaveCount(0)
   await expect(manager.getByRole('button', { name: 'Features panel' })).toBeVisible()
   await manager.goto(`/masar/tasks?spaces=${alpha}`)
   await expect(manager.locator('[data-batch-target]')).toHaveCount(0)
   await expect(manager.locator(`[data-task="${tasks.loose}"]`)).toBeVisible()
-  await manager.getByRole('button', { name: 'Group by Sprint' }).click()
+  await manager.getByRole('button', { name: 'Group by Batch' }).click()
   await expect(manager.locator(`[data-batch-target="${batch}"]`)).toBeVisible()
   await manager.context().close()
 })
 
-test('R9: a planned Sprint is deleted from its box and its tasks return to the Backlog', async ({ browser }) => {
+test('R9: a planned Batch is deleted from its box and its tasks return to the Backlog', async ({ browser }) => {
   const manager = await asUser(browser, USERS.manager)
   await manager.goto(`/masar/tasks?spaces=${alpha}&group=batch`)
-  await manager.locator(`[data-batch-target="${batch}"]`).getByRole('button', { name: `More actions for ${run} Sprint` }).click()
-  await manager.getByRole('menuitem', { name: 'Delete Sprint' }).click()
-  await manager.getByRole('dialog').getByRole('button', { name: 'Delete Sprint' }).click()
+  await manager.locator(`[data-batch-target="${batch}"]`).getByRole('button', { name: `More actions for ${run} Batch` }).click()
+  await manager.getByRole('menuitem', { name: 'Delete Batch' }).click()
+  await manager.getByRole('dialog').getByRole('button', { name: 'Delete Batch' }).click()
   await expect(manager.locator(`[data-batch-target="${batch}"]`)).toHaveCount(0)
   await expect(manager.locator('[data-batch-target="backlog"]').locator(`[data-task="${tasks.planned}"]`)).toBeVisible()
   expect((await api<TaskDetail>(manager, 'masar.api.tasks.get', undefined, { task: tasks.planned })).body.data.batch).toBeNull()
   await manager.context().close()
 })
 
-test('R12–R13, R17: Task header holds Feature, Release and people icons; no Sprint selector; wider panel', async ({ browser }) => {
+test('R12–R13, R17: Task header holds Feature, Release and people icons; no Batch selector; wider panel', async ({ browser }) => {
   const manager = await asUser(browser, USERS.manager)
   await api(manager, 'masar.api.releases.create', { space: alpha, release_name: `${run} v1` })
   await manager.goto(`/masar/spaces/${alpha}/tasks?task=${tasks.kept}`)
   const panel = manager.getByRole('dialog').first()
   await expect(panel.getByText('No Feature')).toHaveCount(0)
   await expect(panel.getByText('No Release')).toHaveCount(0)
-  await expect(panel.getByRole('combobox', { name: 'Sprint' })).toHaveCount(0)
+  await expect(panel.getByRole('combobox', { name: 'Batch' })).toHaveCount(0)
   await panel.getByTestId('task-release').click()
   await manager.getByRole('button', { name: new RegExp(`^${run} v1 Planned$`) }).click()
   await expect(panel.getByTestId('task-release')).toHaveAttribute('aria-label', `Release: ${run} v1`)
@@ -112,8 +112,8 @@ test('R11: Managers create labels in Space settings; members create them from a 
 
 test('R14–R15, R18: date pickers, no Department, and the Violet / Light / full-width defaults', async ({ browser }) => {
   const manager = await asUser(browser, USERS.manager)
-  await manager.goto('/masar/sprints')
-  await manager.getByRole('button', { name: 'New Sprint' }).first().click()
+  await manager.goto('/masar/batches')
+  await manager.getByRole('button', { name: 'New Batch' }).first().click()
   const dialog = manager.getByRole('dialog')
   await dialog.getByRole('textbox').first().fill(`${run} picked`)
   await pickDate(dialog, manager, 'Start date', isoDay(20))

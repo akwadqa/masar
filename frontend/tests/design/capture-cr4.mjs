@@ -1,4 +1,4 @@
-// Client revision 4 evidence: All Tasks filters on one row with coloured icons, the "Plan your Sprint"
+// Client revision 4 evidence: All Tasks filters on one row with coloured icons, the "Plan your Batch"
 // area, a Space task list's filter icons, the Time section of the Task panel and the softer avatars,
 // in light and dark. Signs in on Frappe's own login page. Read-only.
 // Usage: node tests/design/capture-cr4.mjs <origin> <email> <password-file> <out> [width]
@@ -25,8 +25,8 @@ for (const scheme of ['light', 'dark']) {
 
   await page.goto(`${APP}/tasks`); await settle()
   await page.screenshot({ path: `${OUT}/${scheme}-all-tasks-${WIDTH}.png`, clip: { x: 0, y: 0, width: Number(WIDTH), height: 360 } })
-  await page.goto(`${APP}/tasks?group=sprint`); await settle()
-  await page.screenshot({ path: `${OUT}/${scheme}-group-by-sprint-${WIDTH}.png`, clip: { x: 0, y: 0, width: Number(WIDTH), height: 620 } })
+  await page.goto(`${APP}/tasks?group=batch`); await settle()
+  await page.screenshot({ path: `${OUT}/${scheme}-group-by-batch-${WIDTH}.png`, clip: { x: 0, y: 0, width: Number(WIDTH), height: 620 } })
 
   const spaces = await api('spaces.list')
   const busy = [...spaces].filter(s => s.role).sort((a, b) => (b.openTaskCount ?? 0) - (a.openTaskCount ?? 0))[0]

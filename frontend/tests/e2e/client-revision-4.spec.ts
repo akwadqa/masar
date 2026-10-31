@@ -4,7 +4,7 @@ import { USERS, addFilter, pageApi, signIn, uniqueTitle } from './helpers'
 
 // Client revision 4 acceptance (docs/design/client-revision-4/README.md): personal My Day that updates
 // without a refresh and drops finished tasks, softer avatars, Masar beside other Frappe apps (Frappe
-// login, /masar), Time below Attachments, Sprints instead of Batches with a "Plan your Sprint" area,
+// login, /masar), Time below Attachments, Batches instead of Batches with a "Plan your Batch" area,
 // coloured filter icons, and All Tasks filters on one row without Versions and Features.
 test.describe.configure({ mode: 'serial' })
 
@@ -94,7 +94,7 @@ test('R4: avatar initials are regular weight and smaller than the avatar text', 
   await manager.context().close()
 })
 
-test('R5: Masar opens at /masar with Frappe login, and old Batch links lead to Sprints', async ({ browser }) => {
+test('R5: Masar opens at /masar with Frappe login, and old Sprint links lead to Batches', async ({ browser }) => {
   const guest = await (await browser.newContext()).newPage()
   await guest.goto(`/masar/tasks?spaces=${alpha}`)
   // Frappe (server) keeps the slashes; the Workspace (client) encodes them: both return to the same page.
@@ -102,10 +102,13 @@ test('R5: Masar opens at /masar with Frappe login, and old Batch links lead to S
   await guest.context().close()
 
   const manager = await asUser(browser, USERS.manager)
-  await manager.goto('/masar/batches')
-  await expect(manager).toHaveURL(/\/masar\/sprints$/)
-  await expect(manager.getByRole('link', { name: 'Sprints' })).toBeVisible()
-  await expect(manager.getByRole('link', { name: 'Batches' })).toHaveCount(0)
+  // Batches were called Sprints in client revision 4 (reverted 2026-10-31): old links still arrive.
+  await manager.goto('/masar/sprints')
+  await expect(manager).toHaveURL(/\/masar\/batches$/)
+  await expect(manager.getByRole('link', { name: 'Batches' })).toBeVisible()
+  await expect(manager.getByRole('link', { name: 'Sprints' })).toHaveCount(0)
+  await manager.goto(`/masar/spaces/${alpha}/sprints`)
+  await expect(manager).toHaveURL(new RegExp(`/masar/spaces/${alpha}/batches$`))
   await manager.context().close()
 })
 
@@ -153,7 +156,7 @@ test('R9–R12: All Tasks keeps its filters on one row with soft-coloured icons;
     manager.getByRole('button', { name: 'Assigned to me' }),
     // Exact and inside the filter bar: every Task row also has a "Mark … as important" button (QA-T10).
     manager.getByTestId('task-filters').getByRole('button', { name: 'Important', exact: true }),
-    manager.getByRole('button', { name: 'Group by Sprint' })
+    manager.getByRole('button', { name: 'Group by Batch' })
   ]
   const middles = await Promise.all(controls.map(async (control) => {
     const box = (await control.boundingBox())!
@@ -162,7 +165,7 @@ test('R9–R12: All Tasks keeps its filters on one row with soft-coloured icons;
   expect(Math.max(...middles) - Math.min(...middles)).toBeLessThan(4)
 
   // Icons carry colour: not the grey of the text and border.
-  for (const name of ['Assigned to me', 'Important', 'Group by Sprint']) {
+  for (const name of ['Assigned to me', 'Important', 'Group by Batch']) {
     const color = await manager.getByRole('button', { name }).locator('[class*="text-filter-"]').evaluate(node => getComputedStyle(node).color)
     const [r, g, b] = color.match(/[\d.]+/g)!.map(Number)
     expect(Math.max(r!, g!, b!) - Math.min(r!, g!, b!), name).toBeGreaterThan(40)
@@ -182,36 +185,36 @@ test('R9–R12: All Tasks keeps its filters on one row with soft-coloured icons;
   await manager.context().close()
 })
 
-test('R7–R8: with no current Sprint, a "Plan your Sprint" area takes dropped tasks into a new Sprint', async ({ browser }) => {
+test('R7–R8: with no current Batch, a "Plan your Batch" area takes dropped tasks into a new Batch', async ({ browser }) => {
   const admin = await asUser(browser, USERS.admin)
   const space = (await api<SpaceSummary>(admin, 'masar.api.spaces.create', { data: { title: `${run} Planning`, owner: USERS.spare, category: 'Verification' } })).body.data.name
   await admin.context().close()
   const spare = await asUser(browser, USERS.spare)
   const current = (await api<{ items: Batch[] }>(spare, 'masar.api.batches.list')).body.data.items.filter(b => b.status !== 'Finished')
-  test.skip(current.length > 0, 'This account already sees a current Sprint, so the planning area is not shown.')
+  test.skip(current.length > 0, 'This account already sees a current Batch, so the planning area is not shown.')
   const task = await createTask(spare, space, `${run} plan me`)
 
-  await spare.goto('/masar/tasks?group=sprint')
-  const zone = spare.getByTestId('sprint-plan-zone')
-  await expect(zone.getByRole('heading', { name: 'Plan your Sprint' })).toBeVisible()
+  await spare.goto('/masar/tasks?group=batch')
+  const zone = spare.getByTestId('batch-plan-zone')
+  await expect(zone.getByRole('heading', { name: 'Plan your Batch' })).toBeVisible()
   await expect(zone).toContainText('Drag tasks from the Backlog section into this area')
   await spare.evaluate((name) => {
     const row = document.querySelector(`[data-batch-target="backlog"] [data-task="${name}"]`)!
-    const target = document.querySelector('[data-testid="sprint-plan-zone"]')!
+    const target = document.querySelector('[data-testid="batch-plan-zone"]')!
     const transfer = new DataTransfer()
     row.dispatchEvent(new DragEvent('dragstart', { dataTransfer: transfer, bubbles: true }))
     target.dispatchEvent(new DragEvent('dragover', { dataTransfer: transfer, bubbles: true, cancelable: true }))
     target.dispatchEvent(new DragEvent('drop', { dataTransfer: transfer, bubbles: true, cancelable: true }))
   }, task)
-  const dialog = spare.getByRole('dialog', { name: 'New Sprint' })
-  await dialog.getByLabel('Name').fill(`${run} first sprint`)
-  await dialog.getByRole('button', { name: 'Create Sprint' }).click()
-  await expect(spare.getByText(`Added to ${run} first sprint`).first()).toBeVisible()
+  const dialog = spare.getByRole('dialog', { name: 'New Batch' })
+  await dialog.getByLabel('Name').fill(`${run} first batch`)
+  await dialog.getByRole('button', { name: 'Create Batch' }).click()
+  await expect(spare.getByText(`Added to ${run} first batch`).first()).toBeVisible()
   const stored = await api<TaskDetail>(spare, 'masar.api.tasks.get', undefined, { task })
-  expect(stored.body.data.batch?.title).toBe(`${run} first sprint`)
+  expect(stored.body.data.batch?.title).toBe(`${run} first batch`)
   await expect(zone).toHaveCount(0)
 
-  // Leave no current Sprint behind for this shared QA account.
+  // Leave no current Batch behind for this shared QA account.
   expect((await api(spare, 'masar.api.batches.delete', { batch: stored.body.data.batch!.name })).status).toBe(200)
   await spare.context().close()
 })

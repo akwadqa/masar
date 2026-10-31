@@ -1,6 +1,6 @@
 # Masar
 
-Masar is Akwad Programming's agile work-management application: Spaces, Tasks, Features, Versions (Releases), Sprints, My Day, comments, attachments, time tracking and notifications. It is a **Frappe application**, installed as one more app on an existing Frappe/ERPNext site, with its Workspace at **`/masar/`** (for example `/masar/my-day`).
+Masar is Akwad Programming's agile work-management application: Spaces, Tasks, Features, Versions (Releases), Batches, My Day, comments, attachments, time tracking and notifications. It is a **Frappe application**, installed as one more app on an existing Frappe/ERPNext site, with its Workspace at **`/masar/`** (for example `/masar/my-day`).
 
 | | |
 |---|---|

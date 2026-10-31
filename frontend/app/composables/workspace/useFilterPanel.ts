@@ -89,12 +89,12 @@ export function releasePanelItems(releases: Release[]): FilterPanelItem[] {
 
 export function batchPanelItems(batches: Batch[]): FilterPanelItem[] {
   return [
-    { value: 'any', label: 'In a current Sprint', icon: 'i-lucide-calendar-check' },
+    { value: 'any', label: 'In a current Batch', icon: 'i-lucide-calendar-check' },
     ...batches.filter(batch => batch.status !== 'Finished').map(batch => ({
       value: batch.name,
       label: batch.batchName,
       meta: `${batch.status} · ${formatLongDate(batch.startDate)}`
     })),
-    { value: 'none', label: 'Not in a Sprint', icon: 'i-lucide-circle-dashed' }
+    { value: 'none', label: 'Not in a Batch', icon: 'i-lucide-circle-dashed' }
   ]
 }

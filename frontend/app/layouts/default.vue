@@ -8,7 +8,7 @@ const { data: spaces } = useSpaceList()
 const navigation = computed<NavigationMenuItem[]>(() => [
   { label: 'My Day', icon: 'i-lucide-sun', to: '/my-day', ui: { linkLeadingIcon: 'text-focus-accent' } },
   { label: 'All Tasks', icon: 'i-lucide-list-checks', to: '/tasks', exact: true },
-  { label: 'Sprints', icon: 'i-lucide-calendar-range', to: '/sprints' },
+  { label: 'Batches', icon: 'i-lucide-calendar-range', to: '/batches' },
   { label: 'Spaces', icon: 'i-lucide-layout-grid', to: '/spaces', exact: true }
 ])
 // While the sidebar search has a term, its results replace the navigation below it.

@@ -47,7 +47,7 @@ class BatchCase(IntegrationTestCase):
 		frappe.local.response.pop("conflicts", None)
 		frappe.set_user("Administrator")
 
-	def _batch(self, name="Sprint", start="2026-11-02", preset="one_week"):
+	def _batch(self, name="Batch", start="2026-11-02", preset="one_week"):
 		return batches.create_batch(name, start, preset=preset)["batch"]["name"]
 
 	def _planned_batch_with(self, a=2, c=1):
@@ -96,11 +96,11 @@ class TestBatchBasics(BatchCase):
 	def test_planned_metadata_edits_and_deletion(self):
 		batch = self._batch()
 		updated = batches.update_batch(
-			batch, {"batchName": "Renamed", "endDate": "2026-11-12"}, base={"batchName": "Sprint"}
+			batch, {"batchName": "Renamed", "endDate": "2026-11-12"}, base={"batchName": "Batch"}
 		)
 		self.assertEqual((updated["batchName"], updated["endDate"]), ("Renamed", "2026-11-12"))
 		with self.assertRaises(MasarConflictError):
-			batches.update_batch(batch, {"batchName": "Stale"}, base={"batchName": "Sprint"})
+			batches.update_batch(batch, {"batchName": "Stale"}, base={"batchName": "Batch"})
 		# Client revision 3: deleting a Planned Batch returns its Tasks to the Backlog first.
 		task = _task(self.world["A"], "Returns to the Backlog")
 		batches.move_tasks([task], batch)
@@ -175,7 +175,7 @@ class TestBatchVisibility(BatchCase):
 
 		batch, *_ = self._planned_batch_with()
 		as_user("b_member")
-		self.assertNotIn(batch, [r["value"] for r in search_link("Masar Batch", "Sprint")])
+		self.assertNotIn(batch, [r["value"] for r in search_link("Masar Batch", "Batch")])
 		with self.assertRaises(frappe.DoesNotExistError):
 			task_service.list_tasks(self.world["B"], batch=batch)
 

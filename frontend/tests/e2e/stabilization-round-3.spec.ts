@@ -4,15 +4,15 @@ import type { SpaceSummary, TaskDetail } from '../../app/types/api'
 import { USERS, pageApi, signIn, uniqueTitle } from './helpers'
 
 // Stabilization round 3 (docs/qa/stabilization-2026-10-29/round-3-fix-report.md): on phones every
-// control of Space Settings fits the screen (QA-D03), the Sprint header controls do not overlap (QA-D04),
-// the Task header, description toolbar and Sprint chip keep every control reachable (QA-D09, QA-D11),
+// control of Space Settings fits the screen (QA-D03), the Batch header controls do not overlap (QA-D04),
+// the Task header, description toolbar and Batch chip keep every control reachable (QA-D09, QA-D11),
 // the bell's unread badge opens the notifications (QA-D08), and the confirmed accessibility defects stay
 // fixed (QA-D10). Tablet and desktop keep their layout.
 test.describe.configure({ mode: 'serial' })
 
 const run = uniqueTitle('SR3').replace(/\s+/g, '-')
 let space = ''
-let sprint = ''
+let batch = ''
 let task = ''
 const PHONES = [[320, 568], [360, 640], [375, 667], [390, 664], [390, 844], [412, 839], [430, 932]] as const
 
@@ -97,9 +97,9 @@ test.beforeAll(async ({ browser }) => {
   task = (await api<{ task: TaskDetail }>(manager, 'masar.api.tasks.create', { space, title: `${run} task`, client_request_id: crypto.randomUUID() })).body.data.task.name
   const feature = (await api<{ name: string }>(manager, 'masar.api.features.create', { space, title: `${run} feature`, roadmap: 'Now' })).body.data.name
   expect((await api(manager, 'masar.api.tasks.update', { task, changes: { feature } })).status).toBe(200)
-  sprint = (await api<{ batch: { name: string } }>(manager, 'masar.api.batches.create', { batch_name: `${run} Sprint with a rather long title`, start_date: isoDay(0), end_date: isoDay(13), client_request_id: crypto.randomUUID() })).body.data.batch.name
-  await api(manager, 'masar.api.batches.move_tasks', { tasks: [task], batch: sprint })
-  expect((await api(manager, 'masar.api.batches.start', { batch: sprint, request_id: crypto.randomUUID() })).status).toBe(200)
+  batch = (await api<{ batch: { name: string } }>(manager, 'masar.api.batches.create', { batch_name: `${run} Batch with a rather long title`, start_date: isoDay(0), end_date: isoDay(13), client_request_id: crypto.randomUUID() })).body.data.batch.name
+  await api(manager, 'masar.api.batches.move_tasks', { tasks: [task], batch: batch })
+  expect((await api(manager, 'masar.api.batches.start', { batch: batch, request_id: crypto.randomUUID() })).status).toBe(200)
   await manager.context().close()
 })
 
@@ -135,17 +135,17 @@ test('QA-D03: Space Settings fits every phone screen, also with a long member na
   }
 })
 
-test('QA-D04: the Sprint header controls do not overlap on phones and the Finish Sprint action works', async ({ browser }) => {
+test('QA-D04: the Batch header controls do not overlap on phones and the Finish Batch action works', async ({ browser }) => {
   for (const [width, height] of PHONES) {
-    const page = await asUser(browser, USERS.manager, { width, height }, `/masar/sprints/${sprint}`)
-    const finish = page.getByRole('button', { name: 'Finish Sprint' })
+    const page = await asUser(browser, USERS.manager, { width, height }, `/masar/batches/${batch}`)
+    const finish = page.getByRole('button', { name: 'Finish Batch' })
     await expect(finish).toBeVisible()
     expect(await unreachableControls(page, '[data-slot="header"]'), `${width} px`).toEqual([])
-    for (const name of ['Open sidebar', 'All Sprints', 'More Sprint actions']) {
+    for (const name of ['Open sidebar', 'All Batches', 'More Batch actions']) {
       await expect(page.getByRole('button', { name }).or(page.getByRole('link', { name })).first(), `${width} px: ${name}`).toBeInViewport({ ratio: 1 })
     }
-    // On phones the action shows its icon only and the Sprint title keeps room.
-    await expect(finish.getByText('Finish Sprint', { exact: true })).toBeHidden()
+    // On phones the action shows its icon only and the Batch title keeps room.
+    await expect(finish.getByText('Finish Batch', { exact: true })).toBeHidden()
     // 320 px: the status badge leaves the title its first characters only (owner decision pending, see
     // the round 3 report); from 360 px at least 40 px of title are shown.
     expect((await page.getByRole('heading', { level: 1 }).first().boundingBox())!.width, `${width} px: title width`).toBeGreaterThanOrEqual(width >= 360 ? 40 : 8)
@@ -181,9 +181,9 @@ for (const where of ['page', 'panel'] as const) {
       const feature = (await header.getByTestId('task-feature').boundingBox())!
       expect(spaceIcon.x + spaceIcon.width, `${width} px: Space icon before the Feature button`).toBeLessThanOrEqual(feature.x)
       expect(await unreachableControls(page, `${scope} header`), `${width} px header`).toEqual([])
-      // QA-D11: the Sprint chip with a long Sprint name stays inside the screen.
+      // QA-D11: the Batch chip with a long Batch name stays inside the screen.
       const chip = (await page.locator(scope).getByTestId('task-batch').boundingBox())!
-      expect(chip.x + chip.width, `${width} px: Sprint chip`).toBeLessThanOrEqual(width)
+      expect(chip.x + chip.width, `${width} px: Batch chip`).toBeLessThanOrEqual(width)
       await page.context().close()
     }
   })
@@ -195,8 +195,8 @@ test('tablet and desktop keep their layout (no wrapping introduced)', async ({ b
     const row = page.locator('[data-member]').first()
     await expect(row).toBeVisible()
     expect(await row.evaluate(node => getComputedStyle(node).flexWrap)).toBe('nowrap')
-    await page.goto(`/masar/sprints/${sprint}`)
-    await expect(page.getByRole('button', { name: 'Finish Sprint' }).getByText('Finish Sprint', { exact: true })).toBeVisible()
+    await page.goto(`/masar/batches/${batch}`)
+    await expect(page.getByRole('button', { name: 'Finish Batch' }).getByText('Finish Batch', { exact: true })).toBeVisible()
     await page.goto(`/masar/tasks/${task}`)
     const toolbarBase = page.getByRole('region', { name: 'Description' }).getByRole('button', { name: 'Add link' }).locator('xpath=ancestor::div[@data-slot="base"][1]')
     expect(await toolbarBase.evaluate(node => getComputedStyle(node).flexWrap)).toBe('nowrap')
