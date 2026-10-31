@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { TaskListRow } from '~/types/api'
+import type { TaskListRow, TaskSort } from '~/types/api'
 
 // All Tasks: every Task the user can see across their Spaces, as a list (client revision 3). "Group by
 // Sprint" turns it into the planning board: a box per current Sprint with its Task rows and the Backlog,
@@ -9,7 +9,8 @@ import type { TaskListRow } from '~/types/api'
 useHead({ title: 'All Tasks · Masar' })
 const route = useRoute()
 // Every Task by default, completed included (client request, Oct 2026); the Status filter narrows it.
-const { filters, setQuery, activeCount, clearFilters } = useTaskFilters({ sort: 'recently_updated', completed: 'all' })
+const SORTS: TaskSort[] = ['recently_updated', 'created']
+const { filters, setQuery, activeCount, clearFilters } = useTaskFilters({ sort: 'recently_updated', completed: 'all' }, SORTS)
 const { data: tasks, status, error, refresh } = useMyWork(filters)
 const { data: spaces } = useSpaceList('mine')
 const mySpaces = computed(() => (spaces.value ?? []).filter(space => space.role))
@@ -64,7 +65,7 @@ defineShortcuts({ escape: () => { if (controller.selected.value.size && !activeT
               show-mine
               groupable
               :grouped="grouped"
-              :sorts="['recently_updated']"
+              :sorts="SORTS"
               :active-count="activeCount"
               @set="setQuery"
               @clear="clearFilters"

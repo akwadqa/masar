@@ -104,3 +104,9 @@ export async function pickDate(scope: Page | ReturnType<Page['locator']>, page: 
   }
   await day.click()
 }
+
+/** Adds a filter chip (specs/dynamic-task-filters.md); its value menu opens by itself. */
+export async function addFilter(page: Page, field: string) {
+  await page.getByRole('button', { name: 'Add filter' }).click()
+  await page.getByRole('menuitem', { name: field, exact: true }).click()
+}

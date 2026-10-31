@@ -58,6 +58,13 @@
   --color-filter-release: var(--masar-filter-release);
   --color-filter-feature: var(--masar-filter-feature);
   --color-filter-sprint: var(--masar-filter-sprint);
+  --color-filter-add: var(--masar-filter-add);
+  --color-filter-status: var(--masar-filter-status);
+  --color-filter-assignee: var(--masar-filter-assignee);
+  --color-filter-owner: var(--masar-filter-owner);
+  --color-filter-priority: var(--masar-filter-priority);
+  --color-filter-label: var(--masar-filter-label);
+  --color-filter-space: var(--masar-filter-space);
   --radius-pill: var(--masar-radius-pill);
   --radius-card: var(--masar-radius-card);
 }
@@ -102,6 +109,11 @@
      filter bar does not read as greyscale. Important keeps the saffron of its meaning. */
   --masar-filter-mine: #0284c7; --masar-filter-important: #d97706; --masar-filter-release: #7c3aed;
   --masar-filter-feature: #059669; --masar-filter-sprint: #4f46e5;
+  /* Filter chip fields and the "+ Filter" button (client request 2026-10-31): one hue per field,
+     at least 3:1 against the bar for icons. */
+  --masar-filter-add: #c026d3; --masar-filter-status: #0d9488; --masar-filter-assignee: #2563eb;
+  --masar-filter-owner: #ea580c; --masar-filter-priority: #dc2626; --masar-filter-label: #db2777;
+  --masar-filter-space: #4d7c0f;
 
   /* Space icon colours (fixed meaning across themes; tints come from color-mix in components). */
   --masar-space-blue: #0074db; --masar-space-violet: #6647f0; --masar-space-teal: #0f766e; --masar-space-green: #15803d;
@@ -129,6 +141,9 @@
   --masar-avatar-ink-base: #ffffff;
   --masar-filter-mine: #38bdf8; --masar-filter-important: #fbbf24; --masar-filter-release: #a78bfa;
   --masar-filter-feature: #34d399; --masar-filter-sprint: #818cf8;
+  --masar-filter-add: #e879f9; --masar-filter-status: #2dd4bf; --masar-filter-assignee: #60a5fa;
+  --masar-filter-owner: #fb923c; --masar-filter-priority: #f87171; --masar-filter-label: #f472b6;
+  --masar-filter-space: #a3e635;
   --masar-space-blue: #59b7ff; --masar-space-violet: #a895ff; --masar-space-teal: #4ab4a2; --masar-space-green: #4ade80;
   --masar-space-amber: #fbbf24; --masar-space-rose: #fb7199; --masar-space-sky: #38bdf8; --masar-space-slate: #94a3b8;
 }

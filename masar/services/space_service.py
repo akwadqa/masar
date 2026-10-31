@@ -22,7 +22,7 @@ from masar.permissions import (
 	space_capabilities,
 )
 from masar.services.activity import record_activity
-from masar.services.serializers import iso_date, user_refs
+from masar.services.serializers import iso_date, iso_datetime, user_refs
 from masar.utils.context import masar_service
 
 MASAR_ROLES = ("Masar User", "Masar Admin")
@@ -68,6 +68,7 @@ def _summaries(names: list[str]) -> list[dict]:
 			space.completion_date,
 			space.icon,
 			space.icon_color,
+			space.creation,
 		)
 		.where(space.name.isin(names))
 		.orderby(space.title)
@@ -100,6 +101,7 @@ def _summaries(names: list[str]) -> list[dict]:
 			"status": row.status,
 			"spaceType": row.space_type,
 			"completionDate": iso_date(row.completion_date),
+			"creation": iso_datetime(row.creation),
 			"icon": row.icon or None,
 			"iconColor": row.icon_color or None,
 			"owner": refs[row.space_owner],

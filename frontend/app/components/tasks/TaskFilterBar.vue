@@ -1,13 +1,10 @@
 <script setup lang="ts">
-import type { Label, SpaceSummary, TaskListFilters, TaskStatus, UserRef } from '~/types/api'
-import { PRIORITIES, TASK_STATUSES } from '~/types/api'
+import type { Label, SpaceSummary, TaskListFilters, TaskSort, UserRef } from '~/types/api'
 import type { FilterPanelKind } from '~/composables/workspace/useFilterPanel'
-import { statusStyle } from '~/utils/taskStatus'
-import { avatarStyle } from '~/utils/userColor'
 
-// One filter bar for every Task List (client revision 2): search, status, owner, priority and label
-// in one row of equally sized controls. Feature, Version and Batch filters open as side panels
-// (F / V) where a list offers them. Every filter is applied server-side. Toggle icons carry soft
+// One filter bar for every Task List: search, the filter chips (Status, Assignee, Owner, Priority,
+// Label, Space; specs/dynamic-task-filters.md) and sort. Feature, Version and Batch filters open as
+// side panels (F / V) where a list offers them. Every filter is applied server-side. Toggle icons carry soft
 // colours so the bar does not read as greyscale (client revision 4); with `singleRow` (All Tasks) the
 // filters and toggles share one row, and the toggles show only their icon on narrower screens.
 const props = defineProps<{
@@ -30,7 +27,7 @@ const props = defineProps<{
   groupable?: boolean
   grouped?: boolean
   showMine?: boolean
-  sorts: Array<'manual' | 'recently_updated' | 'due_date'>
+  sorts: TaskSort[]
   activeCount: number
 }>()
 const emit = defineEmits<{
@@ -51,33 +48,15 @@ onBeforeUnmount(() => clearTimeout(timer))
 const searchInput = ref<{ inputRef?: HTMLInputElement } | null>(null)
 defineShortcuts({ '/': () => searchInput.value?.inputRef?.focus() })
 
-const sortLabels = { manual: 'Manual order', recently_updated: 'Recently updated', due_date: 'Due date' } as const
-const sortParam = { manual: 'manual', recently_updated: 'recent', due_date: 'due' } as const
+const sortLabels: Record<TaskSort, string> = { manual: 'Manual order', recently_updated: 'Recently updated', due_date: 'Due date', created: 'Creation date' }
+const sortParam: Record<TaskSort, string> = { manual: 'manual', recently_updated: 'recent', due_date: 'due', created: 'created' }
 const sortItems = computed(() => props.sorts.map(sort => ({ label: sortLabels[sort], value: sortParam[sort] })))
-const priorityItems = [{ label: 'Any priority', value: 'any' }, ...PRIORITIES.map(priority => ({ label: priority, value: priority }))]
-const labelItems = computed(() => [{ label: 'Any label', value: 'any' }, ...(props.labels ?? []).map(label => ({ label: label.title, value: label.name, chip: { color: label.color } }))])
-const statusItems = TASK_STATUSES.map(status => ({ label: status, value: status, icon: statusStyle(status).icon, ui: { itemLeadingIcon: statusStyle(status).text } }))
-const personItems = (people: UserRef[] | undefined) => (people ?? []).map(person => ({
-  label: person.fullName,
-  value: person.name,
-  avatar: { src: person.image ?? undefined, alt: person.fullName, class: person.image ? undefined : 'masar-avatar', style: person.image ? undefined : avatarStyle(person.name) }
-}))
-const ownerItems = computed(() => personItems(props.owners))
-const assigneeItems = computed(() => personItems(props.assignees))
-const spaceItems = computed(() => (props.spaces ?? []).map(space => ({ label: space.title, value: space.name })))
-// What the Status, Owner, Assignee and Space buttons show; their accessible names include it (QA-D10).
-// Task lists show every Task unless statuses are chosen (client request, Oct 2026).
-const statusText = computed(() => (props.filters.statuses?.length ? props.filters.statuses.join(', ') : 'Status: any'))
-const ownerText = computed(() => (props.filters.owners?.length ? ownerItems.value.filter(o => props.filters.owners!.includes(o.value)).map(o => o.label).join(', ') : 'Owner: anyone'))
-const assigneeText = computed(() => (props.filters.assignees?.length ? assigneeItems.value.filter(o => props.filters.assignees!.includes(o.value)).map(o => o.label).join(', ') : 'Assignee: anyone'))
-const spaceText = computed(() => (props.filters.spaces?.length ? spaceItems.value.filter(o => props.filters.spaces!.includes(o.value)).map(o => o.label).join(', ') : 'Space: all'))
+const chips = ref<{ reset: () => void } | null>(null)
 
-function setList(param: string, values: string[]) {
-  emit('set', { [param]: values.join(',') || null })
-}
-function setSpaces(values: string[]) {
-  // Labels and Features belong to one Space; a different Space choice clears them.
-  emit('set', { spaces: values.join(',') || null, label: null, feature: null, release: null })
+function clearAll() {
+  search.value = ''
+  chips.value?.reset()
+  emit('clear')
 }
 
 const PANELS: Record<FilterPanelKind, { label: string, icon: string, tone: string, key?: string, param: string }> = {
@@ -97,8 +76,9 @@ const toggleLabel = computed(() => (props.singleRow ? 'hidden @[87.5rem]:inline'
 </script>
 
 <template>
-  <div class="@container border-b border-default px-4 py-3.5 sm:px-5" :class="singleRow ? 'flex flex-wrap items-center gap-1.5' : 'flex flex-col gap-3'">
-    <div :class="singleRow ? 'contents' : 'flex flex-wrap items-center gap-3'">
+  <!-- One row that wraps on narrow screens (client request 2026-10-31: the chips left room for it). -->
+  <div class="@container flex flex-wrap items-center border-b border-default px-4 py-3.5 sm:px-5" :class="singleRow ? 'gap-1.5' : 'gap-2'">
+    <div class="contents">
       <UInput
         ref="searchInput"
         v-model="search"
@@ -111,83 +91,18 @@ const toggleLabel = computed(() => (props.singleRow ? 'hidden @[87.5rem]:inline'
           <span class="hidden px-1 text-sm text-dimmed sm:inline" aria-hidden="true">/</span>
         </template>
       </UInput>
-      <USelectMenu
-        :model-value="filters.statuses ?? []"
-        :items="statusItems"
-        value-key="value"
-        multiple
-        placeholder="Status"
-        icon="i-lucide-circle-dot"
-        :search-input="false"
-        :class="control"
-        :aria-label="`Filter by status: ${statusText}`"
-        @update:model-value="(values: TaskStatus[]) => setList('status', values)"
-      >
-        <template #default="{ modelValue }">
-          <span class="truncate" :class="(modelValue as string[] | undefined)?.length ? 'text-highlighted' : 'text-dimmed'">
-            {{ (modelValue as string[] | undefined)?.length ? (modelValue as string[]).join(', ') : 'Status: any' }}
-          </span>
-        </template>
-      </USelectMenu>
-      <USelectMenu
-        v-if="owners"
-        :model-value="filters.owners ?? []"
-        :items="ownerItems"
-        value-key="value"
-        multiple
-        placeholder="Owner"
-        icon="i-lucide-crown"
-        :search-input="{ placeholder: 'Find a person' }"
-        :class="control"
-        :aria-label="`Filter by owner: ${ownerText}`"
-        @update:model-value="(values: string[]) => setList('owner', values)"
-      >
-        <template #default="{ modelValue }">
-          <span class="truncate" :class="(modelValue as string[] | undefined)?.length ? 'text-highlighted' : 'text-dimmed'">
-            {{ (modelValue as string[] | undefined)?.length ? ownerItems.filter(o => (modelValue as string[]).includes(o.value)).map(o => o.label).join(', ') : 'Owner: anyone' }}
-          </span>
-        </template>
-      </USelectMenu>
-      <USelectMenu
-        v-if="assignees"
-        :model-value="filters.assignees ?? []"
-        :items="assigneeItems"
-        value-key="value"
-        multiple
-        placeholder="Assignee"
-        icon="i-lucide-users"
-        :search-input="{ placeholder: 'Find a person' }"
-        :class="control"
-        :aria-label="`Filter by assignee: ${assigneeText}`"
-        @update:model-value="(values: string[]) => setList('assignee', values)"
-      >
-        <template #default>
-          <span class="truncate" :class="filters.assignees?.length ? 'text-highlighted' : 'text-dimmed'">{{ assigneeText }}</span>
-        </template>
-      </USelectMenu>
-      <USelectMenu
-        v-if="spaces"
-        :model-value="filters.spaces ?? []"
-        :items="spaceItems"
-        value-key="value"
-        multiple
-        icon="i-lucide-layout-grid"
-        :search-input="{ placeholder: 'Find a Space' }"
-        :class="control"
-        :aria-label="`Filter by Space: ${spaceText}`"
-        @update:model-value="setSpaces"
-      >
-        <template #default="{ modelValue }">
-          <span class="truncate" :class="(modelValue as string[] | undefined)?.length ? 'text-highlighted' : 'text-dimmed'">
-            {{ (modelValue as string[] | undefined)?.length ? spaceItems.filter(o => (modelValue as string[]).includes(o.value)).map(o => o.label).join(', ') : 'Space: all' }}
-          </span>
-        </template>
-      </USelectMenu>
-      <USelect :model-value="filters.priority ?? 'any'" :items="priorityItems" :class="control" aria-label="Filter by priority" @update:model-value="(value) => emit('set', { priority: value === 'any' ? null : String(value) })" />
-      <USelect v-if="labels" :model-value="filters.label ?? 'any'" :items="labelItems" :class="control" aria-label="Filter by label" :disabled="!labels.length" @update:model-value="(value) => emit('set', { label: value === 'any' ? null : String(value) })" />
+      <TaskFilterChips
+        ref="chips"
+        :filters="filters"
+        :labels="labels"
+        :spaces="spaces"
+        :owners="owners"
+        :assignees="assignees"
+        @set="(patch) => emit('set', patch)"
+      />
       <USelect v-if="sorts.length > 1" :model-value="sortParam[filters.sort]" :items="sortItems" :class="control" aria-label="Sort tasks" @update:model-value="(value) => emit('set', { sort: String(value) })" />
     </div>
-    <div :class="singleRow ? 'contents' : 'flex flex-wrap items-center gap-3'">
+    <div class="contents">
       <UTooltip v-if="showMine" :text="singleRow ? 'Assigned to me' : undefined" :disabled="!singleRow">
         <UButton
           color="neutral"
@@ -252,7 +167,7 @@ const toggleLabel = computed(() => (props.singleRow ? 'hidden @[87.5rem]:inline'
         <span class="max-w-52 truncate">{{ chip.label }}</span>
         <UButton icon="i-lucide-x" size="sm" color="primary" variant="link" class="p-1" :aria-label="`Remove ${chip.label} filter`" @click="emit('set', { [chip.param]: null })" />
       </span>
-      <UButton v-if="activeCount" variant="link" color="neutral" :label="`Clear ${activeCount} filter${activeCount === 1 ? '' : 's'}`" @click="search = ''; emit('clear')" />
+      <UButton v-if="activeCount" variant="link" color="neutral" :label="`Clear ${activeCount} filter${activeCount === 1 ? '' : 's'}`" @click="clearAll" />
       <slot name="actions" />
     </div>
   </div>

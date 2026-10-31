@@ -171,6 +171,8 @@ def space_capabilities(space: str, owner: str, status: str, user: str | None = N
 		"canManageMembers": can_manage,
 		"canChangeStatus": can_manage,
 		"canTransferOwnership": admin or (owner == user and role == MANAGER),
+		# Deleting a Space removes all its content (client decision 2026-10-31): owner or administrator.
+		"canDelete": admin or owner == user,
 		# Space files are Space content (like Tasks): members read them, Managers add and remove them.
 		"canViewFiles": role is not None,
 		"canManageFiles": role == MANAGER,

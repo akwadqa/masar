@@ -221,12 +221,11 @@ test('tablet and desktop keep their filter layout and never hide the filters', a
   for (const [width, height] of [[768, 1024], [1440, 900]] as const) {
     const page = await asUser(browser, USERS.manager, { width, height }, `/masar/spaces/${spaces.long}/tasks`)
     await expect(list(page).locator('[data-task]').first()).toBeVisible()
-    // The original sizes: Search 16rem, every other select 11rem, the filter area never scrolls.
+    // The original sizes: Search 16rem, Sort 11rem, the filter area never scrolls. Filter chips
+    // (specs/dynamic-task-filters.md) size to their content.
     expect(Math.round((await page.getByLabel('Search tasks').locator('..').boundingBox())!.width)).toBe(256)
-    // Prefix match: the Status and Owner names also carry what the button shows (QA-D10).
-    for (const name of ['Filter by status', 'Filter by owner', 'Filter by priority', 'Filter by label', 'Sort tasks']) {
-      expect(Math.round((await filters(page).locator(`[aria-label^="${name}"]`).boundingBox())!.width), name).toBe(176)
-    }
+    expect(Math.round((await filters(page).getByRole('combobox', { name: 'Sort tasks' }).boundingBox())!.width)).toBe(176)
+    await expect(filters(page).getByRole('button', { name: 'Add filter' })).toBeVisible()
     expect(await filters(page).locator('> div').evaluate(node => getComputedStyle(node).overflowY)).toBe('visible')
     // Wider screens: the list scrolls by itself under filters that stay.
     expect(await list(page).evaluate(node => getComputedStyle(node).overflowY)).toBe('auto')

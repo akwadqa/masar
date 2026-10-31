@@ -249,41 +249,65 @@ class MasarTask(Document):
 		add_to_my_day(self, people)
 
 	def on_trash(self):
-		# Cascade: own Actions and history go with the Task. Lineage pointing at this Task is cleared
-		# (a promoted Action becomes promotable again; promoted Tasks keep existing).
-		frappe.db.delete("Masar Task Action", {"task": self.name})
-		frappe.db.set_value("Masar Task Action", {"promoted_task": self.name}, "promoted_task", None)
-		frappe.db.set_value("Masar Task", {"source_task": self.name}, "source_task", None)
-		frappe.db.delete("Masar Activity", {"reference_doctype": self.doctype, "reference_name": self.name})
-		clear_my_day(self.name)
-		# Collaboration records go with the Task (ADR-051, ADR-054): comments, reactions, delivery records
-		# and private files. Files are removed through Frappe so their bytes are deleted too.
-		for attachment_file in frappe.get_all("Masar Attachment", filters={"task": self.name}, pluck="file"):
-			if attachment_file and frappe.db.exists("File", attachment_file):
-				frappe.delete_doc("File", attachment_file, ignore_permissions=True, force=True)
-		for doctype in (
-			"Masar Attachment",
-			"Masar Comment Reaction",
-			"Masar Comment Notification",
-			"Masar Notification",
-			"Masar Comment",
-			"Masar Time Entry",
-		):
-			frappe.db.delete(doctype, {"task": self.name})
-		# Batch participation (ADR-044): planning rows of a Planned Batch go; any other row is history and
-		# stays (task cleared, open participation becomes Removed) so finished results never change.
-		item = frappe.qb.DocType("Masar Batch Item")
-		batch = frappe.qb.DocType("Masar Batch")
-		planned = frappe.qb.from_(batch).select(batch.name).where(batch.status == "Planned")
-		frappe.qb.from_(item).delete().where(
-			(item.task == self.name) & item.batch.isin(planned) & item.carried_from.isnull()
-		).run()
-		frappe.qb.update(item).set(item.outcome, "Removed").set(item.removed_at, now_datetime()).set(
-			item.removed_by, frappe.session.user
-		).where((item.task == self.name) & item.current_task.isnotnull()).run()
-		frappe.qb.update(item).set(item.task, None).set(item.current_task, None).where(
-			item.task == self.name
-		).run()
+		cascade_task_deletion([self.name])
+
+
+def cascade_task_deletion(task_names: list[str]) -> None:
+	"""Remove everything that belongs to these Tasks; the Task rows themselves are the caller's.
+	Shared by deleting one Task (on_trash) and deleting a whole Space (space_service.delete_space)."""
+	if not task_names:
+		return
+	in_tasks = ["in", task_names]
+	action = frappe.qb.DocType("Masar Task Action")
+	task = frappe.qb.DocType("Masar Task")
+	# Own Actions and history go with the Task. Lineage pointing at it is cleared (a promoted Action
+	# becomes promotable again; promoted Tasks keep existing).
+	frappe.db.delete("Masar Task Action", {"task": in_tasks})
+	frappe.qb.update(action).set(action.promoted_task, None).where(
+		action.promoted_task.isin(task_names)
+	).run()
+	frappe.qb.update(task).set(task.source_task, None).where(task.source_task.isin(task_names)).run()
+	frappe.db.delete("Masar Activity", {"reference_doctype": "Masar Task", "reference_name": in_tasks})
+	frappe.db.delete("Masar My Day", {"task": in_tasks})
+	# Collaboration records go with the Task (ADR-051, ADR-054): comments, reactions, delivery records
+	# and private files. Files are removed through Frappe so their bytes are deleted too.
+	for attachment_file in frappe.get_all("Masar Attachment", filters={"task": in_tasks}, pluck="file"):
+		if attachment_file and frappe.db.exists("File", attachment_file):
+			frappe.delete_doc("File", attachment_file, ignore_permissions=True, force=True)
+	# Time logs go with the Task (client decision 2026-10-31), including the timer sessions that
+	# produced them: a stopped session keeps a required link to its Task, which used to make Frappe
+	# refuse the delete.
+	for doctype in (
+		"Masar Attachment",
+		"Masar Comment Reaction",
+		"Masar Comment Notification",
+		"Masar Notification",
+		"Masar Comment",
+		"Masar Timer Session",
+		"Masar Time Entry",
+	):
+		frappe.db.delete(doctype, {"task": in_tasks})
+	# Child rows of the Tasks: Frappe deletes them with one Task, not when Task rows are bulk-deleted.
+	for child in ("Masar Task Assignee", "Masar Task Label"):
+		frappe.db.delete(child, {"parent": in_tasks, "parenttype": "Masar Task"})
+	_detach_batch_items(task_names)
+
+
+def _detach_batch_items(task_names: list[str]) -> None:
+	"""Batch participation (ADR-044): planning rows of a Planned Batch go; any other row is history and
+	stays (task cleared, open participation becomes Removed) so finished results never change."""
+	item = frappe.qb.DocType("Masar Batch Item")
+	batch = frappe.qb.DocType("Masar Batch")
+	planned = frappe.qb.from_(batch).select(batch.name).where(batch.status == "Planned")
+	frappe.qb.from_(item).delete().where(
+		item.task.isin(task_names) & item.batch.isin(planned) & item.carried_from.isnull()
+	).run()
+	frappe.qb.update(item).set(item.outcome, "Removed").set(item.removed_at, now_datetime()).set(
+		item.removed_by, frappe.session.user
+	).where(item.task.isin(task_names) & item.current_task.isnotnull()).run()
+	frappe.qb.update(item).set(item.task, None).set(item.current_task, None).where(
+		item.task.isin(task_names)
+	).run()
 
 
 def on_doctype_update():
