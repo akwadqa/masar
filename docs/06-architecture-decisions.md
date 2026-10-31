@@ -105,7 +105,7 @@ The original "repository *is* the Frappe app" proposal (CRM/Gameplan layout) was
 **Promotion workflow (decision F).** `masar.api.actions.promote(action)`:
 1. Lock the Action row (`FOR UPDATE`); 404 if not readable; 403 if not writable.
 2. If `promoted_task` is set → return that Task (idempotent, no error).
-3. Create Task: `title` = Action title; `space`, `feature`, `release` inherited from the parent Task; `priority` = parent priority; **not** inherited: batch (planning is deliberate), labels, attributes, assignees, due date. No assignees → no owner (I-TASK-2). `source_task` = parent, `source_action` = Action (unique index guarantees one promotion even under races).
+3. Create Task: `title` = Action title; `space`, `feature`, `release` inherited from the parent Task; `priority` = parent priority; **not** inherited: batch (planning is deliberate), labels, attributes, assignees, due date. The owner is the parent's owner (I-TASK-2); nobody is assigned automatically (owner decision of 2026-10-31). `source_task` = parent, `source_action` = Action (unique index guarantees one promotion even under races).
 4. Update Action: `promoted_task`, `promoted_at`, `promoted_by`; title locked.
 5. Activity: `action_promoted` on parent, `promoted_from_action` on new Task.
 6. Single transaction; on any failure nothing persists. Response returns the new Task row + updated Action so the UI can link both.
@@ -298,7 +298,8 @@ Transitions: In Progress → Completed / Cancelled / Closed; Completed → In Pr
 | Title | Action text |
 | Space | Parent Task's Space |
 | Priority | Parent's priority |
-| Assignees, task owner | Parent's assignees and owner (all current Space members by invariant) |
+| Task owner | Parent's owner |
+| Assignees | None (owner decision of 2026-10-31: nobody is assigned automatically) |
 | Description, due date, labels, Important / My Day | Not copied |
 | Feature, Batch, Release | Not copied (no approved rule; future phases) |
 | Lineage | `source_task` = parent, `source_action` = Action (unique) |

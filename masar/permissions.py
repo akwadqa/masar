@@ -171,6 +171,9 @@ def space_capabilities(space: str, owner: str, status: str, user: str | None = N
 		"canManageMembers": can_manage,
 		"canChangeStatus": can_manage,
 		"canTransferOwnership": admin or (owner == user and role == MANAGER),
+		# Space files are Space content (like Tasks): members read them, Managers add and remove them.
+		"canViewFiles": role is not None,
+		"canManageFiles": role == MANAGER,
 		"allowedStatuses": list(STATUS_TRANSITIONS.get(status, ())) if can_manage else [],
 	}
 
@@ -483,6 +486,11 @@ def attachment_query_conditions(user=None, doctype=None) -> str:
 	return "" if _is_superuser(user) else _space_column_condition("Masar Attachment", user)
 
 
+def space_file_query_conditions(user=None, doctype=None) -> str:
+	user = user or frappe.session.user
+	return "" if _is_superuser(user) else _space_column_condition("Masar Space File", user)
+
+
 def time_entry_query_conditions(user=None, doctype=None) -> str:
 	user = user or frappe.session.user
 	return "" if _is_superuser(user) else _space_column_condition("Masar Time Entry", user)
@@ -546,14 +554,25 @@ def push_subscription_query_conditions(user=None, doctype=None) -> str:
 	return "" if _is_superuser(user or frappe.session.user) else "1=0"
 
 
+MASAR_FILE_PARENTS = ("Masar Task", "Masar Space")
+
+
+def _file_space(doc) -> str | None:
+	if not doc.get("attached_to_name"):
+		return None
+	if doc.attached_to_doctype == "Masar Space":
+		return doc.attached_to_name
+	return frappe.db.get_value("Masar Task", doc.attached_to_name, "space")
+
+
 def file_has_permission(doc, ptype=None, user=None, debug=False) -> bool:
-	"""Deny-only hook (Frappe ANDs controller hooks). Files attached to a Masar Task are readable only
-	by current members of the Task's Space — including the uploader, whom Frappe would otherwise always
-	allow — and are changed only by Masar services. Other files are left to Frappe."""
+	"""Deny-only hook (Frappe ANDs controller hooks). Files attached to a Masar Task or a Masar Space
+	are readable only by current members of that Space — including the uploader, whom Frappe would
+	otherwise always allow — and are changed only by Masar services. Other files are left to Frappe."""
 	user = user or frappe.session.user
-	if _is_superuser(user) or doc.get("attached_to_doctype") != "Masar Task":
+	if _is_superuser(user) or doc.get("attached_to_doctype") not in MASAR_FILE_PARENTS:
 		return True
-	space = frappe.db.get_value("Masar Task", doc.attached_to_name, "space") if doc.attached_to_name else None
+	space = _file_space(doc)
 	if not space or get_space_role(space, user) is None:
 		return False
 	if ptype in READ_PTYPES or ptype is None:
@@ -565,9 +584,12 @@ def file_query_conditions(user=None, doctype=None) -> str:
 	user = user or frappe.session.user
 	if _is_superuser(user):
 		return ""
+	spaces = _member_spaces_subquery(user)
 	return (
-		"(ifnull(`tabFile`.attached_to_doctype, '') != 'Masar Task' or `tabFile`.attached_to_name in "
-		f"(select `tabMasar Task`.name from `tabMasar Task` where `tabMasar Task`.space in ({_member_spaces_subquery(user)})))"
+		"(ifnull(`tabFile`.attached_to_doctype, '') not in ('Masar Task', 'Masar Space')"
+		" or (`tabFile`.attached_to_doctype = 'Masar Task' and `tabFile`.attached_to_name in "
+		f"(select `tabMasar Task`.name from `tabMasar Task` where `tabMasar Task`.space in ({spaces})))"
+		f" or (`tabFile`.attached_to_doctype = 'Masar Space' and `tabFile`.attached_to_name in ({spaces})))"
 	)
 
 

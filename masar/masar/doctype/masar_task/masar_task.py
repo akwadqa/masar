@@ -7,6 +7,7 @@ from frappe.utils import getdate, now_datetime, nowdate
 
 from masar.permissions import get_space_role
 from masar.services.activity import record_activity
+from masar.services.personal.my_day_service import add_to_my_day, due_task_people, is_due_today
 from masar.services.personal.my_day_service import clear_task as clear_my_day
 
 TITLE_MAX_LENGTH = 240
@@ -147,13 +148,11 @@ class MasarTask(Document):
 			frappe.throw(_("This task belongs to an archived Release. Reopen the Release to change it."))
 
 	def _resolve_task_owner(self):
-		"""Invariant I-TASK-2: with assignees, the owner is required and must be one of them;
-		the first assignee is the default. Without assignees there is no owner."""
-		assignees = [row.user for row in self.assignees]
-		if not assignees:
-			self.task_owner = None
-		elif self.task_owner not in assignees:
-			self.task_owner = assignees[0]
+		"""Owner rule I-TASK-2 (owner decision of 2026-10-31): the creator owns a new Task by default,
+		and Masar never changes the owner on its own (not when assignees change, not when a member
+		leaves the Space). People change it deliberately with set_owner."""
+		if not self.task_owner and self.is_new():
+			self.task_owner = self.owner or frappe.session.user
 
 	def _apply_status(self):
 		"""`status` is the source of truth. Older callers that only flip `is_completed` (set_completed,
@@ -202,6 +201,7 @@ class MasarTask(Document):
 
 	def on_update(self):
 		before = self.get_doc_before_save()
+		self._join_my_day(before)
 		if not before:
 			return
 		if self.is_completed and not before.is_completed:
@@ -235,6 +235,18 @@ class MasarTask(Document):
 			record_activity(self, "label_added", {"label": label})
 		for label in sorted(old_labels - new_labels):
 			record_activity(self, "label_removed", {"label": label})
+
+	def _join_my_day(self, before):
+		"""A Task that is, or becomes, due today joins the My Day of its people (my_day_service): all of
+		them when it is new, newly due today or reopened; otherwise only people assigned just now."""
+		if not is_due_today(self):
+			return
+		assignees = [row.user for row in self.assignees]
+		if not before or str(before.due_date or "") != str(self.due_date) or before.is_completed:
+			people = due_task_people(self, assignees)
+		else:
+			people = set(assignees) - {row.user for row in before.assignees}
+		add_to_my_day(self, people)
 
 	def on_trash(self):
 		# Cascade: own Actions and history go with the Task. Lineage pointing at this Task is cleared

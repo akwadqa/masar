@@ -407,21 +407,21 @@ def removal_impact(space_name: str, user: str) -> dict:
 			.groupby(assignee.parent)
 			.run()
 		)
-	owned = [t for t in tasks if t.task_owner == user]
 	return {
 		"assignedTasks": len(tasks),
 		"openAssignedTasks": sum(1 for t in tasks if not t.is_completed),
-		"ownedTasks": len(owned),
-		"ownershipMoves": sum(1 for t in owned if counts.get(t.name, 0) > 1),
+		# Every Task of the Space the user owns, assigned or not; ownership stays with them (I-TASK-2).
+		"ownedTasks": frappe.db.count("Masar Task", {"space": space_name, "task_owner": user}),
+		"ownershipMoves": 0,  # the owner never changes on removal (I-TASK-2); kept for API compatibility
 		"tasksLeftUnassigned": sum(1 for t in tasks if counts.get(t.name, 0) == 1),
 		"isOwner": frappe.db.get_value("Masar Space", space_name, "space_owner") == user,
 	}
 
 
 def remove_member(space_name: str, user: str) -> dict:
-	"""Transactional removal (ADR-021): the user is unassigned from every Task of the Space,
-	task ownership moves to the next assignee (or is cleared), and access ends with this request.
-	Authored records (tasks created, history) stay attributed to the user."""
+	"""Transactional removal (ADR-021): the user is unassigned from every Task of the Space and
+	access ends with this request. Task ownership does not change (I-TASK-2). Authored records
+	(tasks created, history) stay attributed to the user."""
 	require_space_manage(space_name)
 	doc = _locked_space(space_name)
 	row = next((m for m in doc.members if m.user == user), None)

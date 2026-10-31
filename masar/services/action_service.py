@@ -243,7 +243,7 @@ def promote(action_name: str) -> dict:
 			"space": parent.space,
 			"title": action.title,
 			"priority": parent.priority,
-			"assignees": [{"user": row.user} for row in parent.assignees],
+			# The parent's owner, but no assignees: people assign Tasks themselves (2026-10-31).
 			"task_owner": parent.task_owner,
 			"source_task": parent.name,
 			"source_action": action.name,

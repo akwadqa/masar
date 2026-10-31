@@ -60,11 +60,12 @@ class TestCreatorOwnsNewTask(IntegrationTestCase):
 	def tearDown(self):
 		frappe.set_user("Administrator")
 
-	def test_creator_is_owner_and_assignee_and_can_hand_over(self):
+	def test_creator_is_owner_nobody_is_assigned_and_owner_can_hand_over(self):
 		as_user("a_member")
 		task = task_service.get_detail(_task(self.world["A"], "Mine"))
 		self.assertEqual(task["taskOwner"], email("a_member"))
-		self.assertEqual([a["name"] for a in task["assignees"]], [email("a_member")])
+		self.assertEqual(task["assignees"], [])  # assignment is always a person's choice
+		task_service.add_assignee(task["name"], email("a_member"))
 		task_service.add_assignee(task["name"], email("ab_member"))
 		task = task_service.set_owner(task["name"], email("ab_member"))
 		self.assertEqual(task["taskOwner"], email("ab_member"))
@@ -168,7 +169,7 @@ class TestNotifications(IntegrationTestCase):
 		self.assertEqual(_inbox("a_member"), [], "creating a Task notifies nobody")
 		as_user("a_member")
 		task_service.remove_assignee(task, email("a_member"))
-		task_service.add_assignee(task, email("ab_member"))  # first assignee, so also the owner
+		task_service.add_assignee(task, email("ab_member"))  # the creator stays the owner (I-TASK-2)
 		items = _inbox("ab_member")
 		self.assertEqual([i["kind"] for i in items], ["Assigned"])
 		self.assertEqual(items[0]["actor"]["name"], email("a_member"))

@@ -89,15 +89,17 @@ class TestTaskModel(IntegrationTestCase):
 	def _unassigned(self):
 		return unassigned_task(self.world["A"], "Model task", frappe.generate_hash(length=16))
 
-	def test_first_assignee_becomes_owner_and_owner_follows_removal(self):
+	def test_creator_stays_owner_when_assignees_change(self):
+		# I-TASK-2 (2026-10-31): the creator owns the Task and Masar never moves ownership on its own.
 		name = self._unassigned()
 		task_service.add_assignee(name, email("a_member"))
 		detail = task_service.add_assignee(name, email("ab_member"))
-		self.assertEqual(detail["taskOwner"], email("a_member"))
+		self.assertEqual(detail["taskOwner"], email("a_manager"))
+		self.assertEqual(detail["taskOwnerRef"]["name"], email("a_manager"))
 		detail = task_service.remove_assignee(name, email("a_member"))
-		self.assertEqual(detail["taskOwner"], email("ab_member"))
+		self.assertEqual(detail["taskOwner"], email("a_manager"))
 		detail = task_service.remove_assignee(name, email("ab_member"))
-		self.assertIsNone(detail["taskOwner"])
+		self.assertEqual(detail["taskOwner"], email("a_manager"))
 
 	def test_owner_must_be_an_assignee(self):
 		name = self._unassigned()

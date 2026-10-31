@@ -4,7 +4,7 @@ import type { NavigationMenuItem } from '@nuxt/ui'
 const { user } = useSession()
 const { data: spaces } = useSpaceList()
 
-// Workspace destinations (client revision 2): My Day is the home page; My Work was removed.
+// Workspace destinations (client revision 2): My Day is the home page.
 const navigation = computed<NavigationMenuItem[]>(() => [
   { label: 'My Day', icon: 'i-lucide-sun', to: '/my-day', ui: { linkLeadingIcon: 'text-focus-accent' } },
   { label: 'All Tasks', icon: 'i-lucide-list-checks', to: '/tasks', exact: true },

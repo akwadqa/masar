@@ -2,8 +2,8 @@ import frappe
 from frappe import _
 from frappe.model.document import Document
 from frappe.utils import now_datetime
-from frappe.utils.html_utils import sanitize_html
 
+from masar.masar.doctype.masar_task.masar_task import clean_markdown
 from masar.permissions import MANAGER, clear_membership_cache
 
 
@@ -13,8 +13,8 @@ class MasarSpace(Document):
 		if not self.title:
 			frappe.throw(_("Title is required."))
 		self._validate_gameplan_url()
-		if self.details:
-			self.details = sanitize_html(self.details, always_sanitize=True)
+		# Details are Markdown, cleaned exactly like Task descriptions (owner decision of 2026-10-31).
+		self.details = clean_markdown(self.details)
 		self._validate_members()
 
 	def _validate_gameplan_url(self):
@@ -52,4 +52,8 @@ class MasarSpace(Document):
 	def on_trash(self):
 		if frappe.db.exists("Masar Task", {"space": self.name}):
 			frappe.throw(_("This Space still contains tasks. Change its status instead of deleting it."))
+		# Space files go with their Space, bytes included (Frappe keeps bytes another File still uses).
+		from masar.services.space_file_service import remove_space_files
+
+		remove_space_files(frappe.get_all("Masar Space File", filters={"space": self.name}, pluck="name"))
 		clear_membership_cache()

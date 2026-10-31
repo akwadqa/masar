@@ -69,6 +69,9 @@ export interface SpacePermissions {
   canManageMembers: boolean
   canChangeStatus: boolean
   canTransferOwnership: boolean
+  /** Space files: members read them, Space Managers add and remove them */
+  canViewFiles: boolean
+  canManageFiles: boolean
   allowedStatuses: SpaceStatus[]
 }
 
@@ -81,6 +84,7 @@ export interface SpaceDetail {
   completionDate: string | null
   icon: string | null
   iconColor: SpaceIconColor | null
+  /** Markdown (like Task descriptions) */
   details: string | null
   gameplanUrl: string | null
   owner: UserRef
@@ -364,6 +368,8 @@ export interface TaskListRow {
   isMyDay: boolean
   assignees: UserRef[]
   taskOwner: string | null
+  /** The owner's person; may be outside the assignees (Tasks imported from ERPNext keep their creator) */
+  taskOwnerRef?: UserRef | null
   actionCount: number
   actionDoneCount: number
   commentCount: number
@@ -483,6 +489,13 @@ export interface AttachmentRef {
   size: number
   isImage: boolean
   contentType: string
+}
+
+/** A private Space file (BRD, customer documents, project material) */
+export interface SpaceFile extends AttachmentRef {
+  uploadedBy: UserRef | null
+  uploadedAt: string
+  canDelete: boolean
 }
 
 export interface TaskAttachment extends AttachmentRef {

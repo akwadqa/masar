@@ -163,7 +163,7 @@ def _serialise_rows(rows) -> list[dict]:
 	attachments."""
 	names = [r.name for r in rows]
 	assignees = _assignees_by_task(names)
-	refs = user_refs([u for users in assignees.values() for u in users])
+	refs = user_refs([u for users in assignees.values() for u in users] + [r.get("task_owner") for r in rows])
 	labels = _labels_by_task(names)
 	titles = _space_titles(r.space for r in rows)
 	features, releases = planning_refs(
@@ -473,7 +473,7 @@ def _compact(item: dict) -> dict:
 
 def _detail(doc) -> dict:
 	assignees = [row.user for row in doc.assignees]
-	refs = user_refs([*assignees, doc.owner, doc.completed_by])
+	refs = user_refs([*assignees, doc.owner, doc.completed_by, doc.task_owner])
 	row = task_row(doc.as_dict(), assignees, refs)
 	role = get_space_role(doc.space)
 	features, releases = planning_refs([doc.feature], [doc.target_release])
@@ -559,14 +559,13 @@ def create(space: str, title: str, client_request_id: str) -> dict:
 	if existing:
 		return {"task": get_detail(existing), "created": False}
 
-	# The creator owns a new Task (client revision 5); I-TASK-2 makes the owner an assignee, and
-	# assigning others or handing ownership over works as before.
+	# The creator owns a new Task (I-TASK-2). Nobody is assigned automatically: people assign Tasks
+	# themselves (owner decision of 2026-10-31).
 	doc = frappe.get_doc(
 		{
 			"doctype": "Masar Task",
 			"space": space,
 			"title": title,
-			"assignees": [{"user": frappe.session.user}],
 			"task_owner": frappe.session.user,
 			"client_request_id": client_request_id,
 			"sort_order": _top_sort_order(space),

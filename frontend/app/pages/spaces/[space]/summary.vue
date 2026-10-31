@@ -49,8 +49,15 @@ defineProps<{ space: SpaceDetail }>()
       </dl>
       <div>
         <p class="mb-1 text-sm text-muted">Description</p>
-        <!-- Server-sanitised HTML (sanitize_html on save). -->
-        <div v-if="space.details" class="space-y-2 text-sm text-default" v-html="space.details" />
+        <!-- Markdown (cleaned on save like Task descriptions), shown read-only with the same editor. -->
+        <UEditor
+          v-if="space.details"
+          :model-value="space.details"
+          content-type="markdown"
+          :editable="false"
+          :ui="{ base: 'text-sm text-default *:my-1.5 [&_p]:leading-6 [&_h3]:text-base [&_h3]:font-semibold [&_pre]:rounded-md [&_pre]:bg-elevated [&_pre]:p-3 [&_blockquote]:border-s-2 [&_blockquote]:border-accented [&_blockquote]:ps-3 [&_blockquote]:text-muted' }"
+          aria-label="Description"
+        />
         <p v-else class="text-sm text-dimmed">No description yet.</p>
       </div>
     </UCard>
@@ -86,5 +93,7 @@ defineProps<{ space: SpaceDetail }>()
         </li>
       </ul>
     </UCard>
+
+    <SpaceFiles v-if="space.permissions.canViewFiles" :space="space" class="lg:col-span-3" />
   </div>
 </template>

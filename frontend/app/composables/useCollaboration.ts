@@ -160,28 +160,31 @@ export function useCommentMutations() {
 }
 
 /** Multipart upload with progress (XHR: fetch has no upload progress). CSRF as for every Masar write. */
-export async function uploadAttachment(task: string, file: File, purpose: 'Task' | 'Comment', onProgress?: (percent: number) => void) {
+export async function uploadMultipart<T>(method: string, fields: Record<string, string>, file: File, onProgress?: (percent: number) => void) {
   const { user, loadBoot } = useSession()
   const session = user.value ?? (await loadBoot().then(() => user.value))
   const body = new FormData()
-  body.append('task', task)
-  body.append('purpose', purpose)
+  for (const [key, value] of Object.entries(fields)) body.append(key, value)
   body.append('file', file, file.name)
-  return new Promise<AttachmentRef>((resolve, reject) => {
+  return new Promise<T>((resolve, reject) => {
     const xhr = new XMLHttpRequest()
-    xhr.open('POST', '/api/v2/method/masar.api.attachments.upload')
+    xhr.open('POST', `/api/v2/method/${method}`)
     xhr.withCredentials = true
     xhr.setRequestHeader('X-Frappe-CSRF-Token', session?.csrfToken ?? '')
     xhr.upload.onprogress = (event) => { if (event.lengthComputable) onProgress?.(Math.round(event.loaded * 100 / event.total)) }
     xhr.onload = () => {
       let data: unknown = null
       try { data = JSON.parse(xhr.responseText) } catch { /* non-JSON error page */ }
-      if (xhr.status >= 200 && xhr.status < 300) resolve((data as { data: AttachmentRef }).data)
+      if (xhr.status >= 200 && xhr.status < 300) resolve((data as { data: T }).data)
       else reject(toApiError(xhr.status, data))
     }
     xhr.onerror = () => reject(toApiError(undefined, null))
     xhr.send(body)
   })
+}
+
+export function uploadAttachment(task: string, file: File, purpose: 'Task' | 'Comment', onProgress?: (percent: number) => void) {
+  return uploadMultipart<AttachmentRef>('masar.api.attachments.upload', { task, purpose }, file, onProgress)
 }
 
 // ----------------------------------------------------------------------------- time tracking

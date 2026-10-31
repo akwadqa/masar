@@ -124,7 +124,7 @@ class TestActions(IntegrationTestCase):
 			(new["title"], new["space"], new["priority"], new["taskOwner"]),
 			("Write migration script", self.world["A"], "High", email("ab_member")),
 		)
-		self.assertEqual({a["name"] for a in new["assignees"]}, {email("a_member"), email("ab_member")})
+		self.assertEqual(new["assignees"], [])  # the owner is inherited, assignment is not
 		self.assertIsNone(new["description"])
 		self.assertFalse(new["isImportant"])
 		self.assertEqual(new["sourceTask"]["name"], parent)

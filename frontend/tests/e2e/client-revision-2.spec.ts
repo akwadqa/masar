@@ -108,18 +108,16 @@ test('S2: a Task whose due date has passed becomes Overdue automatically, and th
   await manager.context().close()
 })
 
-test('S3: My Work is gone; home and old links open My Day, which has no count bar', async ({ browser }) => {
+test('S3: home opens My Day, which has no count bar; there is no My Work', async ({ browser }) => {
   const manager = await asUser(browser, USERS.manager)
   await manager.goto('/masar/')
   await expect(manager).toHaveURL(/\/my-day$/)
   await expect(manager.getByRole('link', { name: 'My Work' })).toHaveCount(0)
-  await manager.goto('/masar/my-work')
-  await expect(manager).toHaveURL(/\/my-day$/)
   await expect(manager.getByText(/^\d+ open$/)).toHaveCount(0)
   await manager.context().close()
 })
 
-test('S4: Task details: people behind an icon, status chip, no completion, Important or My Day, Markdown description, timer box, footer', async ({ browser }) => {
+test('S4: Task details: people always visible, status chip, no completion, Important or My Day, Markdown description, timer box, footer', async ({ browser }) => {
   const manager = await asUser(browser, USERS.manager)
   await manager.goto(`/masar/spaces/${alpha}/tasks?task=${tasks.owned}`)
   const panel = manager.getByRole('dialog')

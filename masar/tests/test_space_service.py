@@ -206,12 +206,13 @@ class TestSpaceService(IntegrationTestCase):
 		impact = space_service.removal_impact(name, email("a_member"))
 		self.assertEqual(
 			{k: impact[k] for k in ("assignedTasks", "ownedTasks", "ownershipMoves", "tasksLeftUnassigned")},
-			{"assignedTasks": 2, "ownedTasks": 2, "ownershipMoves": 1, "tasksLeftUnassigned": 1},
+			# The creator (a_manager) owns both Tasks; removal never moves ownership (I-TASK-2).
+			{"assignedTasks": 2, "ownedTasks": 0, "ownershipMoves": 0, "tasksLeftUnassigned": 1},
 		)
 		result = space_service.remove_member(name, email("a_member"))
 		self.assertEqual(result["tasksUpdated"], 2)
-		self.assertEqual(frappe.db.get_value("Masar Task", shared, "task_owner"), email("ab_member"))
-		self.assertIsNone(frappe.db.get_value("Masar Task", solo, "task_owner"))
+		self.assertEqual(frappe.db.get_value("Masar Task", shared, "task_owner"), email("a_manager"))
+		self.assertEqual(frappe.db.get_value("Masar Task", solo, "task_owner"), email("a_manager"))
 		self.assertEqual(frappe.db.get_value("Masar Task", solo, "is_completed"), 1)  # history intact
 		self.assertEqual(frappe.db.get_value("Masar Task", solo, "completed_by"), email("a_manager"))
 		self.assertTrue(frappe.db.exists("Masar Activity", {"reference_name": shared, "event": "unassigned"}))

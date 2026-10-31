@@ -78,10 +78,7 @@ def as_user(key: str):
 
 
 def unassigned_task(space: str, title: str, client_request_id: str) -> str:
-	"""A Task without assignees or owner. Since client revision 5 the creator owns a new Task; tests of
-	assignment and ownership rules start from no assignee."""
+	"""A new Task: owned by its creator, with no assignee (nobody is assigned automatically)."""
 	from masar.services import task_service
 
-	name = task_service.create(space, title, client_request_id)["task"]["name"]
-	task_service.remove_assignee(name, frappe.session.user)
-	return name
+	return task_service.create(space, title, client_request_id)["task"]["name"]

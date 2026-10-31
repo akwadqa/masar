@@ -3,6 +3,7 @@ import type {
   EditableSpaceFields,
   RemovalImpact,
   SpaceDetail,
+  SpaceFile,
   SpaceMember,
   SpaceRole,
   SpaceStatus,
@@ -47,6 +48,28 @@ export function useSpaceMembers(space: MaybeRefOrGetter<string | null | undefine
 }
 
 /** Active Masar users for pickers; `space` excludes existing members and requires manage rights. */
+export function useSpaceFiles(space: MaybeRefOrGetter<string>) {
+  const api = useMasarApi()
+  return useMasarQuery<SpaceFile[]>(
+    () => `space-files:${toValue(space)}`,
+    signal => api.get('masar.api.spaces.files', { space: toValue(space) }, signal),
+    { default: () => [] }
+  )
+}
+
+export function uploadSpaceFile(space: string, file: File, onProgress?: (percent: number) => void) {
+  return uploadMultipart<SpaceFile>('masar.api.spaces.upload_file', { space }, file, onProgress)
+}
+
+export function useSpaceFileMutations() {
+  const api = useMasarApi()
+  const remove = useMasarMutation(
+    (vars: { space: string, file: string }) => api.post('masar.api.spaces.delete_file', { space_file: vars.file }),
+    { invalidate: (_r, vars) => [`space-files:${vars.space}`] }
+  )
+  return { remove }
+}
+
 export function searchUserCandidates(query: string, space?: string) {
   return useMasarApi().get<UserRef[]>('masar.api.spaces.user_candidates', { query, space })
 }

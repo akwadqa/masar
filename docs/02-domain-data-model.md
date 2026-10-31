@@ -117,7 +117,7 @@ Why a child table: changes are rare, made by Managers only, and the invariants I
 | `priority` | Select | ✓ | `Medium`; `Lowest`/`Low`/`Medium`/`High`/`Highest` | |
 | `due_date` | Date | | | Date-only (no timezone). |
 | `assignees` | Table → Masar Task Assignee | | | Ordered by `idx`. |
-| `task_owner` | Link User | cond. | the creator (client revision 5), else the first assignee | See I-TASK-2. |
+| `task_owner` | Link User | | the creator | See I-TASK-2. |
 | `feature` | Link Masar Feature | | | Same Space. |
 | `release` | Link Masar Release | | | Same Space; Release not Archived. |
 | `batch` | Link Masar Batch | | | RO for generic writes; set by `batch_service`. Batch must be Planned or Active. |
@@ -139,7 +139,7 @@ Why a child table: changes are rare, made by Managers only, and the invariants I
 **Invariants:**
 
 - I-TASK-1: `space` exists and the acting user is a member (create) — enforced by permission hook.
-- I-TASK-2 (owner): a Task created in the Workspace starts with its creator as the only assignee and owner (client revision 5). If `assignees` is empty → `task_owner` is empty. If non-empty → `task_owner` is required and must be one of the assignees; if the client leaves it empty or names a non-assignee who was just removed, the server sets it to the first assignee (by `idx`). This handles add, reorder and removal deterministically.
+- I-TASK-2 (owner, owner decision of 2026-10-31): the creator owns a new Task by default. Nobody is assigned automatically: a new Task (also one promoted from an Action) starts without assignees, and people assign it themselves. Masar never changes the owner on its own: not when assignees are added, removed or reordered, and not when a member leaves the Space. The owner may therefore be someone who is not an assignee (for example the original creator of a Task imported from ERPNext). People change it deliberately with `set_owner`, which accepts a current assignee.
 - I-TASK-3: every assignee is a current member of `space`; assignee users are unique.
 - I-TASK-4: `feature.space == space`, `release.space == space`, every `labels[].label.space == space` (Q-01/Q-03 defaults).
 - I-TASK-5: `is_completed` transitions set/clear `completed_at`, `completed_by` (server time and session user). Clients cannot write those fields.
@@ -368,6 +368,26 @@ As implemented in Phase 7 (ADR-060 to ADR-062; the Phase 0 draft names `user`, `
 
 Append-only: no update or delete permission for anyone except cascade on parent deletion.
 **Indexes:** `(reference_doctype, reference_name, creation)`.
+
+### 3.12 Masar My Day (one day long)
+
+> **Owner decision of 2026-10-31.** `Masar My Day` holds one row per person and Task (unique `(user, task)`), private to that person.
+> - My Day lasts one day: `my_day_service.start_new_day` (cron `5 0 * * *`, Asia/Qatar, next to `mark_overdue`) deletes every row and adds the unfinished Tasks due today.
+> - A Task that becomes due today during the day (new, due date changed to today, or reopened) joins at once; a person newly assigned to a Task due today gets it too. A person who removes it keeps it removed until the next day.
+> - "Its people" are the assignees, or the owner when nobody is assigned; only current, enabled Space members qualify. Finished Tasks leave every My Day (unchanged).
+
+### 3.13 Masar Space File
+
+> **Owner decision of 2026-10-31.** Private Space material (BRDs, customer-provided documents, project files).
+
+| Field | Type | Req | Notes |
+|---|---|---|---|
+| `space` | Link Masar Space | ✓ RO | |
+| `file` | Link File | ✓ | Private Frappe File attached to the Masar Space. |
+| `file_url`, `file_name`, `file_size`, `content_type`, `is_image` | | RO | As `Masar Attachment`; the type is detected from the bytes (`attachment_service.detect`). |
+
+Space members list and download them (`file_has_permission` covers Files attached to a Masar Space); Space Managers upload and remove them (Space Settings). The size limit is Frappe's (System Settings → Max File Size). Deleting a Space deletes its files.
+**Indexes:** `(space, creation)`.
 
 ## 4. Sample records
 

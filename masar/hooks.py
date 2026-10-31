@@ -43,6 +43,7 @@ has_permission = {
 	"Masar Comment": "masar.permissions.space_content_has_permission",
 	"Masar Comment Reaction": "masar.permissions.space_content_has_permission",
 	"Masar Attachment": "masar.permissions.space_content_has_permission",
+	"Masar Space File": "masar.permissions.space_content_has_permission",
 	"Masar Time Entry": "masar.permissions.space_content_has_permission",
 	"Masar Comment Notification": "masar.permissions.notification_has_permission",
 	"Masar Timer Session": "masar.permissions.timer_has_permission",
@@ -70,6 +71,7 @@ permission_query_conditions = {
 	"Masar Comment": "masar.permissions.comment_query_conditions",
 	"Masar Comment Reaction": "masar.permissions.comment_reaction_query_conditions",
 	"Masar Attachment": "masar.permissions.attachment_query_conditions",
+	"Masar Space File": "masar.permissions.space_file_query_conditions",
 	"Masar Timer Session": "masar.permissions.timer_query_conditions",
 	"Masar My Day": "masar.permissions.my_day_query_conditions",
 	"Masar Time Entry": "masar.permissions.time_entry_query_conditions",
@@ -86,7 +88,13 @@ extend_doctype_class = {
 scheduler_events = {
 	"daily": ["masar.services.attachment_service.cleanup_abandoned_uploads"],
 	# Shortly after midnight in the site time zone (Asia/Qatar): unfinished Tasks past their due date.
-	"cron": {"5 0 * * *": ["masar.services.task_service.mark_overdue"]},
+	# Then each person's My Day starts afresh with the Tasks due today.
+	"cron": {
+		"5 0 * * *": [
+			"masar.services.task_service.mark_overdue",
+			"masar.services.personal.my_day_service.start_new_day",
+		]
+	},
 }
 
 doc_events = {

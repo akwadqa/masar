@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import type { SpaceFormState } from './SpaceForm.vue'
-import { textToHtml } from '~/utils/format'
 
 const open = defineModel<boolean>('open', { required: true })
 const { create } = useSpaceMutations()
@@ -29,7 +28,7 @@ async function submit() {
       spaceType: state.value.spaceType,
       completionDate: state.value.completionDate,
       gameplanUrl: state.value.gameplanUrl.trim() || null,
-      details: textToHtml(state.value.details)
+      details: state.value.details.trim() || null  // Markdown
     })
     open.value = false
     toast.add({ title: 'Space created', description: space.title, color: 'success', icon: 'i-lucide-circle-check' })

@@ -133,6 +133,6 @@ const rowSurface = computed(() => {
         <span v-if="overdue" class="sr-only">Overdue, due </span>{{ formatDueDate(task.dueDate) }}
       </template>
     </span>
-    <span class="hidden @2xl:block"><TaskPeople :assignees="task.assignees" :owner="task.taskOwner" /></span>
+    <span class="hidden @2xl:block"><TaskPeople :assignees="task.assignees" :owner="task.taskOwner" :owner-ref="task.taskOwnerRef" /></span>
   </div>
 </template>

@@ -55,6 +55,8 @@ def task_row(task: dict, assignees: list[str], refs: dict[str, dict]) -> dict:
 		"isMyDay": False,
 		"assignees": [refs[u] for u in assignees if u in refs],
 		"taskOwner": task.get("task_owner"),
+		# The owner may be outside the assignees (Tasks imported from ERPNext keep their creator).
+		"taskOwnerRef": refs.get(task.get("task_owner")) if task.get("task_owner") else None,
 		"actionCount": task.get("action_count") or 0,
 		"actionDoneCount": task.get("action_done_count") or 0,
 		"commentCount": task.get("comment_count") or 0,

@@ -24,5 +24,8 @@ watch(() => props.space.permissions.canManageMembers, (allowed) => {
     <div id="labels" class="lg:col-span-5">
       <SpaceLabelsManager :space="space" />
     </div>
+    <div v-if="space.permissions.canManageFiles" class="lg:col-span-5">
+      <SpaceFiles :space="space" manage />
+    </div>
   </div>
 </template>

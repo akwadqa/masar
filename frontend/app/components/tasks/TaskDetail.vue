@@ -5,9 +5,9 @@ import { rememberRecent } from '~/utils/recent'
 import { TASK_FIELD_LABELS } from '~/composables/workspace/useTaskEditor'
 import { transferFiles } from '~/utils/transferFiles'
 
-// One Task editor for the side panel and the full page (client revisions 2 and 3): Feature, Release
-// and people as icons in the header;
-// title and property chips (status first); the Markdown description; the time box (timer, logged and
+// One Task editor for the side panel and the full page (client revisions 2 and 3): Feature and Release
+// as icons in the header; title, property chips (status first) and the people (owner and assignees,
+// always visible); the Markdown description; the time box (timer, logged and
 // remaining); Actions, attachments and activity; record details as a footer.
 const props = defineProps<{ name: string, mode: 'panel' | 'page' }>()
 const emit = defineEmits<{ deleted: [], close: [] }>()
@@ -101,17 +101,9 @@ async function deleteTask() {
 
     <template v-else-if="task">
       <TaskDetailHeader :task="task" :mode="mode" @delete="confirmDelete = true" @close="emit('close')">
-        <template #people>
+        <template #planning>
           <TaskPlanningLink kind="feature" :task="task" :editor="editor" />
           <TaskPlanningLink kind="release" :task="task" :editor="editor" />
-          <TaskPeoplePicker
-            :assignees="task.assignees"
-            :owner="task.taskOwner"
-            :members="members ?? []"
-            :disabled="!editable"
-            @toggle="editor.toggleAssignee"
-            @owner="editor.setOwner"
-          />
         </template>
       </TaskDetailHeader>
 
@@ -163,6 +155,15 @@ async function deleteTask() {
             @keydown.esc="title = task.title; ($event.target as HTMLTextAreaElement).blur()"
           />
           <TaskPropertyChips :task="task" :editor="editor" />
+          <TaskPeoplePicker
+            :assignees="task.assignees"
+            :owner="task.taskOwner"
+            :owner-ref="task.taskOwnerRef"
+            :members="members ?? []"
+            :disabled="!editable"
+            @toggle="editor.toggleAssignee"
+            @owner="editor.setOwner"
+          />
         </div>
 
         <TaskDescription :value="task.description" :editable="editable" @save="(markdown) => editor.save({ description: markdown })" />

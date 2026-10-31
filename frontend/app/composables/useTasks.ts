@@ -159,7 +159,7 @@ export function lookupTasks(names: string[]) {
 
 // ----------------------------------------------------------------------------- cache helpers
 
-/** Write a server-confirmed Task into every cached list (Space lists and My Work) and its detail. */
+/** Write a server-confirmed Task into every cached list (Space lists and cross-Space lists) and its detail. */
 export function applyServerTask(task: TaskDetail) {
   updateCachedQueries<TaskListRow[]>('tasks:', rows =>
     rows.map(row => (row.name === task.name ? { ...row, ...toRow(task) } : row))

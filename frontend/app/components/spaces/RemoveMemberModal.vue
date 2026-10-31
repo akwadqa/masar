@@ -63,10 +63,11 @@ async function confirm() {
         <UAlert v-else-if="impactError" color="error" variant="subtle" :title="impactError" />
         <div v-else-if="impact" class="rounded-md border border-default p-3" data-testid="removal-impact">
           <p v-if="!impact.assignedTasks" class="text-muted">No task assignments are affected.</p>
-          <ul v-else class="space-y-1.5">
-            <li>Removed as assignee from <strong>{{ impact.assignedTasks }}</strong> task{{ impact.assignedTasks === 1 ? '' : 's' }} ({{ impact.openAssignedTasks }} open).</li>
+          <ul v-if="impact.assignedTasks || impact.ownedTasks" class="space-y-1.5" :class="{ 'mt-1.5': !impact.assignedTasks }">
+            <li v-if="impact.assignedTasks">Removed as assignee from <strong>{{ impact.assignedTasks }}</strong> task{{ impact.assignedTasks === 1 ? '' : 's' }} ({{ impact.openAssignedTasks }} open).</li>
             <li v-if="impact.ownershipMoves">Task ownership moves to the next assignee on <strong>{{ impact.ownershipMoves }}</strong> task{{ impact.ownershipMoves === 1 ? '' : 's' }}.</li>
-            <li v-if="impact.tasksLeftUnassigned"><strong>{{ impact.tasksLeftUnassigned }}</strong> task{{ impact.tasksLeftUnassigned === 1 ? ' becomes' : 's become' }} unassigned and without an owner.</li>
+            <li v-if="impact.tasksLeftUnassigned"><strong>{{ impact.tasksLeftUnassigned }}</strong> task{{ impact.tasksLeftUnassigned === 1 ? ' becomes' : 's become' }} unassigned.</li>
+            <li v-if="impact.ownedTasks">They stay the owner of <strong>{{ impact.ownedTasks }}</strong> task{{ impact.ownedTasks === 1 ? '' : 's' }}; ownership never changes automatically.</li>
           </ul>
         </div>
         <UAlert v-if="isSelf" color="warning" variant="subtle" icon="i-lucide-triangle-alert" title="You are removing yourself" description="You will no longer be able to open this Space." />

@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import type { EditableSpaceFields, SpaceDetail } from '~/types/api'
 import type { MasarApiError } from '~/utils/apiError'
-import { htmlToText, textToHtml } from '~/utils/format'
 import type { SpaceFormState } from './SpaceForm.vue'
 
 const props = defineProps<{ space: SpaceDetail }>()
@@ -15,7 +14,7 @@ const fromSpace = (space: SpaceDetail): SpaceFormState => ({
   spaceType: space.spaceType,
   completionDate: space.completionDate,
   gameplanUrl: space.gameplanUrl ?? '',
-  details: htmlToText(space.details)
+  details: space.details ?? ''
 })
 const state = ref<SpaceFormState>(fromSpace(props.space))
 let baseline = JSON.stringify(state.value)
@@ -36,7 +35,8 @@ function changes(): Partial<EditableSpaceFields> {
     spaceType: s.spaceType,
     completionDate: s.completionDate,
     gameplanUrl: s.gameplanUrl.trim() || null,
-    details: htmlToText(props.space.details) === s.details.trim() ? props.space.details : textToHtml(s.details)
+    // Markdown, as stored (the editor may normalise spacing: compare trimmed text).
+    details: s.details.trim() === (props.space.details ?? '').trim() ? props.space.details : s.details.trim() || null
   }
   const diff: Partial<EditableSpaceFields> = {}
   for (const key of Object.keys(next) as Array<keyof EditableSpaceFields>) {

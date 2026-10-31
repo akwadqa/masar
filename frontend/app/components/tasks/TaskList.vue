@@ -8,7 +8,7 @@ import { buildTaskRows, nextFocusIndex, type ExpandedActions } from '~/utils/tas
 import { setTaskDrag, TASK_GRID, TASK_GRID_NO_DUE } from '~/utils/taskGrid'
 
 const ROW_HEIGHT = 48
-// Scroll positions per list (e.g. a Space view or a My Work filter) survive navigation to a task page.
+// Scroll positions per list (e.g. a Space view or an All Tasks filter) survive navigation to a task page.
 const scrollMemory = new Map<string, number>()
 
 const props = defineProps<{

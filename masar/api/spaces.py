@@ -1,6 +1,6 @@
 import frappe
 
-from masar.services import space_service
+from masar.services import space_file_service, space_service
 from masar.utils.context import masar_write
 
 
@@ -77,3 +77,23 @@ def remove_member(space: str, user: str):
 @masar_write
 def transfer_ownership(space: str, new_owner: str, expected_owner: str | None = None):
 	return space_service.transfer_ownership(space, new_owner, expected_owner)
+
+
+@frappe.whitelist(methods=["GET"])
+def files(space: str):
+	"""Space members: the Space's files, newest first."""
+	return space_file_service.list_files(space)
+
+
+@frappe.whitelist(methods=["POST"])
+@masar_write
+def upload_file(space: str):
+	"""Space Managers. Multipart form upload (field `file`)."""
+	return space_file_service.upload(space)
+
+
+@frappe.whitelist(methods=["POST"])
+@masar_write
+def delete_file(space_file: str):
+	"""Space Managers."""
+	return space_file_service.delete(space_file)

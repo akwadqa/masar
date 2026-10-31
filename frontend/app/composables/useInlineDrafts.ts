@@ -55,7 +55,7 @@ export function useInlineDrafts(space: MaybeRefOrGetter<string>) {
   })
 
   function addToLists(task: TaskDetail) {
-    // Insert into every cached view (Space lists and My Work) whose filters admit a new open task.
+    // Insert into every cached view (Space lists and cross-Space lists) whose filters admit a new open task.
     for (const key of [...cacheKeys(`tasks:list:${task.space}:`), ...cacheKeys('tasks:mywork:')]) {
       const filters = parseListKey(key)
       if (!filters || !filtersAdmitNewTask(filters)) continue
