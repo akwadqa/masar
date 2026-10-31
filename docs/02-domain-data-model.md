@@ -92,7 +92,7 @@ Field types use Frappe fieldtypes. "Req" = mandatory. "RO" = read-only to client
 - I-SPACE-5: every member user has the global role `Masar User` and is enabled.
 
 **Indexes:** child table `(user, parent)` index on `tabMasar Space Member` for permission subqueries.
-**Deletion:** forbidden if any Task, Feature, Release or Label references the Space; Spaces are retired with `status`. Only `Masar Admin` may delete an empty Space.
+**Deletion (client decision 2026-10-31, replaces "retire with `status` only"):** the Space owner or a Masar administrator may delete a Space from Space settings after typing its title (`masar.api.spaces.delete`). Everything in it is deleted in one transaction: Tasks (with their full Task cascade), Features, Releases, Labels, Space files, Batch Items, Activity, notifications, My Day rows, comments, time entries and timer sessions. Batches span Spaces and stay. Retiring with `status` remains the non-destructive option.
 **Audit:** `track_changes` on; membership changes additionally written as `Masar Activity` with `reference_doctype = Masar Space`.
 
 #### Masar Space Member (child table)
@@ -147,7 +147,7 @@ Why a child table: changes are rare, made by Managers only, and the invariants I
 - I-TASK-7: `client_request_id` unique per `owner` (DB unique index `(owner, client_request_id)`).
 
 **Indexes:** `(space, is_completed, modified)`, `(space, feature)`, `(space, release)`, `(batch)`, `(task_owner)`, `(owner, client_request_id)` unique, child `Masar Task Assignee (user, parent)`, `Masar Task Label (label, parent)`, `source_action` unique.
-**Deletion:** allowed for the creator or a Space Manager. Cascades in a single transaction: Actions, Comments, Reactions, Time Entries, Activity, Batch Items and attached Files are deleted. A Task that is the `source_task` of others keeps them (their `source_task` is cleared). Deletion is recorded in a Space-level Activity entry (title only).
+**Deletion:** allowed for the creator or a Space Manager. Cascades in a single transaction: Actions, Comments, Reactions, Time Entries, timer sessions (client decision 2026-10-31), Activity, Batch Items and attached Files are deleted. A Task that is the `source_task` of others keeps them (their `source_task` is cleared). Deletion is recorded in a Space-level Activity entry (title only).
 **Audit:** `Masar Activity` written from `on_update` by diffing `get_doc_before_save()`; `track_changes` off (avoid duplicate history).
 
 #### Masar Task Assignee (child table)
@@ -471,8 +471,8 @@ Frappe wraps each HTTP request in one database transaction, committed at the end
 
 | Record | Strategy |
 |---|---|
-| Space | Never cascaded; retire via `status`. |
-| Task | Hard delete with cascade (creator/Manager), confirmation required. |
+| Space | Owner or Masar administrator: hard delete with full cascade (title typed to confirm); otherwise retire via `status`. |
+| Task | Hard delete with cascade (creator/Manager), confirmation required; time entries and timer sessions go with it. |
 | Comment | Soft delete (placeholder kept). |
 | Action | Hard delete. |
 | Feature / Label | Hard delete, references cleared. |

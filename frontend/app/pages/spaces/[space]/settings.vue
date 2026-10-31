@@ -27,5 +27,8 @@ watch(() => props.space.permissions.canManageMembers, (allowed) => {
     <div v-if="space.permissions.canManageFiles" class="lg:col-span-5">
       <SpaceFiles :space="space" manage />
     </div>
+    <div v-if="space.permissions.canDelete" class="lg:col-span-5">
+      <DeleteSpaceCard :space="space" />
+    </div>
   </div>
 </template>

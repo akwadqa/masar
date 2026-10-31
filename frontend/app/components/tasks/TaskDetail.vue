@@ -205,7 +205,7 @@ async function deleteTask() {
       </div>
       </div>
 
-      <UModal v-model:open="confirmDelete" title="Delete this task?" description="This permanently deletes the task and its history. This cannot be undone.">
+      <UModal v-model:open="confirmDelete" title="Delete this task?" description="This permanently deletes the task with its actions, comments, files, time logs and history. This cannot be undone.">
         <template #footer>
           <div class="flex w-full justify-end gap-2">
             <UButton color="neutral" variant="outline" label="Cancel" @click="confirmDelete = false" />

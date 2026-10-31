@@ -49,7 +49,7 @@ Defaults are PROPOSED unless noted; business-level items flagged with their appr
 | Add/remove members, change roles | — | ✓ | Cannot remove/demote the Owner; cannot remove the last Manager |
 | Transfer Space ownership | — | Owner only (+ Masar Admin) | New owner must be a Manager |
 | Create Space | Q-05 | Q-05 | Default: `Masar Admin` only |
-| Delete Space | — | — | `Masar Admin`, only when empty |
+| Delete Space (with all its content) | — | Owner only (+ Masar Admin) | Title typed to confirm; full cascade in one transaction (client decision 2026-10-31) |
 | Create Task | ✓ | ✓ | |
 | Edit any Task field (title, description, priority, due, Feature, Release, labels, Important, My Day) | ✓ | ✓ | Collaborative team model |
 | Assign / unassign users, set task owner | ✓ | ✓ | Only Space members can be assigned |

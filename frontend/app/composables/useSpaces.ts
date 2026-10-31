@@ -149,5 +149,22 @@ export function useSpaceMutations() {
     { onSuccess: space => applySpace(space) }
   )
 
-  return { create, update, setStatus, addMember, changeRole, removeMember, transferOwnership }
+  // Deleting a Space removes it and everything in it; the session's Space list and every cached view
+  // of it are refreshed (client decision 2026-10-31).
+  const deleteSpace = useMasarMutation(
+    (vars: { space: string, confirmTitle: string }) =>
+      api.post<{ name: string, deleted: boolean, tasksDeleted: number }>('masar.api.spaces.delete', {
+        space: vars.space,
+        confirm_title: vars.confirmTitle
+      }),
+    {
+      // Lists only: refetching the deleted Space itself would 404 on the page being left.
+      onSuccess: () => {
+        void invalidateQueries('spaces:list', 'tasks:mywork:')
+        void loadBoot(true)
+      }
+    }
+  )
+
+  return { create, update, setStatus, addMember, changeRole, removeMember, transferOwnership, deleteSpace }
 }

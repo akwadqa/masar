@@ -1,6 +1,6 @@
 import frappe
 
-from masar.services import space_file_service, space_service
+from masar.services import space_deletion, space_file_service, space_service
 from masar.utils.context import masar_write
 
 
@@ -77,6 +77,13 @@ def remove_member(space: str, user: str):
 @masar_write
 def transfer_ownership(space: str, new_owner: str, expected_owner: str | None = None):
 	return space_service.transfer_ownership(space, new_owner, expected_owner)
+
+
+@frappe.whitelist(methods=["POST"])
+@masar_write
+def delete(space: str, confirm_title: str):
+	"""Deletes the Space and everything in it (owner or Masar administrator, title typed to confirm)."""
+	return space_deletion.delete_space(space, confirm_title)
 
 
 @frappe.whitelist(methods=["GET"])

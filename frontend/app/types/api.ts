@@ -71,6 +71,8 @@ export interface SpacePermissions {
   canManageMembers: boolean
   canChangeStatus: boolean
   canTransferOwnership: boolean
+  /** Space owner or Masar administrator: deletes the Space and everything in it */
+  canDelete: boolean
   /** Space files: members read them, Space Managers add and remove them */
   canViewFiles: boolean
   canManageFiles: boolean
