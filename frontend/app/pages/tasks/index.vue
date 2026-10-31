@@ -8,7 +8,8 @@ import type { TaskListRow } from '~/types/api'
 // the label filter appears once a single Space is chosen. The selection survives filter changes.
 useHead({ title: 'All Tasks · Masar' })
 const route = useRoute()
-const { filters, setQuery, activeCount, clearFilters } = useTaskFilters({ sort: 'recently_updated' })
+// Every Task by default, completed included (client request, Oct 2026); the Status filter narrows it.
+const { filters, setQuery, activeCount, clearFilters } = useTaskFilters({ sort: 'recently_updated', completed: 'all' })
 const { data: tasks, status, error, refresh } = useMyWork(filters)
 const { data: spaces } = useSpaceList('mine')
 const mySpaces = computed(() => (spaces.value ?? []).filter(space => space.role))
@@ -16,6 +17,7 @@ const scope = computed(() => filters.value.spaces ?? [])
 const singleSpace = computed(() => (scope.value.length === 1 ? scope.value[0]! : null))
 const { data: labels } = useSpaceLabels(singleSpace)
 const { data: owners } = useTaskOwners(() => ({ spaces: scope.value }))
+const { data: assignees } = useTaskAssignees(() => ({ spaces: scope.value }))
 const { data: manageable } = useManageableBatches()
 const controller = useTaskListController(tasks, { persistentSelection: true })
 // "batch" is the value of links made before the rename to Sprints (client revision 4).
@@ -58,6 +60,7 @@ defineShortcuts({ escape: () => { if (controller.selected.value.size && !activeT
               single-row
               :spaces="mySpaces"
               :owners="owners ?? []"
+              :assignees="assignees ?? []"
               show-mine
               groupable
               :grouped="grouped"

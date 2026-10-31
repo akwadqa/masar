@@ -79,7 +79,7 @@ const hasFilters = computed(() => status.value !== 'In Progress' || !!search.val
     </template>
 
     <template #body>
-      <div v-if="loadStatus === 'pending' && !spaces?.length" class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+      <div v-if="loadStatus === 'pending' && !spaces?.length" class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
         <USkeleton v-for="i in 6" :key="i" class="h-36" />
       </div>
       <StatePanel v-else-if="error" tone="error" icon="i-lucide-cloud-off" title="Spaces could not be loaded" :description="error.message">
@@ -96,7 +96,7 @@ const hasFilters = computed(() => status.value !== 'In Progress' || !!search.val
       <StatePanel v-else-if="!filtered.length" icon="i-lucide-search-x" title="No Spaces match these filters">
         <UButton v-if="hasFilters" color="neutral" variant="outline" label="Clear filters" @click="search = ''; setQuery({ status: undefined, q: undefined })" />
       </StatePanel>
-      <div v-else class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+      <div v-else class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
         <NuxtLink
           v-for="space in filtered"
           :key="space.name"

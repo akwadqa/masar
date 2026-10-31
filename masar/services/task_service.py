@@ -186,6 +186,16 @@ def _serialise_rows(rows) -> list[dict]:
 	return items
 
 
+def _assigned_to(users: list[str]):
+	"""Subquery of the Tasks assigned to any of these users."""
+	assignee = frappe.qb.DocType("Masar Task Assignee")
+	return (
+		frappe.qb.from_(assignee)
+		.select(assignee.parent)
+		.where(assignee.user.isin(users) & (assignee.parenttype == "Masar Task"))
+	)
+
+
 def _query_tasks(
 	spaces: list[str],
 	*,
@@ -196,6 +206,7 @@ def _query_tasks(
 	my_day=False,
 	statuses: list[str] | None = None,
 	owners: list[str] | None = None,
+	assignees: list[str] | None = None,
 	priority: str | None = None,
 	due: str | None = None,
 	label: str | list[str] | None = None,
@@ -225,14 +236,7 @@ def _query_tasks(
 	if owned_by_me:
 		query = query.where(task.task_owner == user)
 	if assigned_to_me:
-		assignee = frappe.qb.DocType("Masar Task Assignee")
-		query = query.where(
-			task.name.isin(
-				frappe.qb.from_(assignee)
-				.select(assignee.parent)
-				.where((assignee.user == user) & (assignee.parenttype == "Masar Task"))
-			)
-		)
+		query = query.where(task.name.isin(_assigned_to([user])))
 	if statuses:
 		if any(value not in STATUSES for value in statuses):
 			frappe.throw(_("Unknown status."))
@@ -240,6 +244,11 @@ def _query_tasks(
 	if owners:
 		# Owners only narrow Tasks of Spaces already authorised above; no other user data is read.
 		query = query.where(task.task_owner.isin([o for o in owners if isinstance(o, str)] or [""]))
+	if assignees:
+		# Like owners: Tasks with any of these assignees, within the Spaces authorised above.
+		query = query.where(
+			task.name.isin(_assigned_to([a for a in assignees if isinstance(a, str)] or [""]))
+		)
 	if important:
 		query = query.where(task.is_important == 1)
 	if my_day:
@@ -405,19 +414,30 @@ def my_work(space: str | None = None, spaces_filter: list[str] | None = None, **
 	return _query_tasks(spaces, **filters)
 
 
-def owners(space: str | None = None, spaces_filter: list[str] | None = None) -> list[dict]:
-	"""People who own Tasks in the caller's Spaces (or the given ones), for the owner filter.
-	Only Spaces the caller currently belongs to are read."""
+def _filter_spaces(space: str | None, spaces_filter: list[str] | None) -> list[str]:
+	"""The caller's Spaces, narrowed to the requested ones; a Space they don't belong to is a 404."""
 	require_masar_user()
 	allowed = list(get_user_spaces())
 	if space:
 		if space not in allowed:
 			not_found("Space")
-		allowed = [space]
-	elif spaces_filter:
+		return [space]
+	if spaces_filter:
 		if any(name not in allowed for name in spaces_filter):
 			not_found("Space")
-		allowed = list(dict.fromkeys(spaces_filter))
+		return list(dict.fromkeys(spaces_filter))
+	return allowed
+
+
+def _sorted_refs(users: list[str]) -> list[dict]:
+	refs = user_refs(users)
+	return sorted((refs[u] for u in users), key=lambda r: (r["fullName"] or "").lower())
+
+
+def owners(space: str | None = None, spaces_filter: list[str] | None = None) -> list[dict]:
+	"""People who own Tasks in the caller's Spaces (or the given ones), for the owner filter.
+	Only Spaces the caller currently belongs to are read."""
+	allowed = _filter_spaces(space, spaces_filter)
 	if not allowed:
 		return []
 	task = frappe.qb.DocType("Masar Task")
@@ -429,8 +449,28 @@ def owners(space: str | None = None, spaces_filter: list[str] | None = None) -> 
 		.where(task.space.isin(allowed) & task.task_owner.isnotnull())
 		.run()
 	]
-	refs = user_refs(users)
-	return sorted((refs[u] for u in users), key=lambda r: (r["fullName"] or "").lower())
+	return _sorted_refs(users)
+
+
+def assignees(space: str | None = None, spaces_filter: list[str] | None = None) -> list[dict]:
+	"""People assigned to Tasks in the caller's Spaces (or the given ones), for the assignee filter.
+	Only Spaces the caller currently belongs to are read."""
+	allowed = _filter_spaces(space, spaces_filter)
+	if not allowed:
+		return []
+	task = frappe.qb.DocType("Masar Task")
+	assignee = frappe.qb.DocType("Masar Task Assignee")
+	users = [
+		u
+		for (u,) in frappe.qb.from_(assignee)
+		.join(task)
+		.on(task.name == assignee.parent)
+		.select(assignee.user)
+		.distinct()
+		.where(task.space.isin(allowed) & (assignee.parenttype == "Masar Task") & assignee.user.isnotnull())
+		.run()
+	]
+	return _sorted_refs(users)
 
 
 def search(q: str, limit: int = 20) -> list[dict]:

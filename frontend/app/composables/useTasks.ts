@@ -46,7 +46,7 @@ export function myWorkKey(filters: TaskListFilters) {
 /** Whether a brand-new, unassigned, open task would appear in a list with these filters. */
 export function filtersAdmitNewTask(filters: Partial<TaskListFilters>): boolean {
   return filters.completed !== 'completed' && (!filters.statuses?.length || filters.statuses.includes('Open'))
-    && !filters.owners?.length && !filters.assignedToMe && !filters.ownedByMe && !filters.important
+    && !filters.owners?.length && !filters.assignees?.length && !filters.assignedToMe && !filters.ownedByMe && !filters.important
     && !filters.myDay && !filters.priority && !filters.due && !filters.label && !filters.q
     && (!filters.feature || filters.feature === 'none') && (!filters.release || filters.release === 'none')
     && (!filters.batch || filters.batch === 'none')
@@ -63,10 +63,11 @@ export function parseListKey(key: string): TaskListFilters | null {
 
 export function toQuery(f: TaskListFilters) {
   return {
-    // Chosen statuses are exact; without a choice the list shows unfinished Tasks.
+    // Chosen statuses are exact; without a choice `completed` decides (the Task lists show all).
     completed: f.statuses?.length ? 'all' : f.completed,
     statuses: f.statuses?.length ? f.statuses.join(',') : undefined,
     owners: f.owners?.length ? f.owners.join(',') : undefined,
+    assignees: f.assignees?.length ? f.assignees.join(',') : undefined,
     assigned_to_me: f.assignedToMe,
     owned_by_me: f.ownedByMe,
     important: f.important || undefined,
@@ -127,12 +128,23 @@ export function useMyWork(filters: MaybeRefOrGetter<TaskListFilters>) {
   )
 }
 
+type PeopleScope = MaybeRefOrGetter<{ space?: string | null, spaces?: string[] | null }>
+
 /** People who own Tasks in one Space or across the user's Spaces (owner filter options). */
-export function useTaskOwners(scope: MaybeRefOrGetter<{ space?: string | null, spaces?: string[] | null }>) {
+export function useTaskOwners(scope: PeopleScope) {
+  return useTaskPeople('owners', scope)
+}
+
+/** People assigned to Tasks in one Space or across the user's Spaces (assignee filter options). */
+export function useTaskAssignees(scope: PeopleScope) {
+  return useTaskPeople('assignees', scope)
+}
+
+function useTaskPeople(role: 'owners' | 'assignees', scope: PeopleScope) {
   const api = useMasarApi()
   return useMasarQuery<UserRef[]>(
-    () => `tasks:owners:${toValue(scope).space ?? ''}:${(toValue(scope).spaces ?? []).join(',')}`,
-    signal => api.get('masar.api.tasks.owners', {
+    () => `tasks:${role}:${toValue(scope).space ?? ''}:${(toValue(scope).spaces ?? []).join(',')}`,
+    signal => api.get(`masar.api.tasks.${role}`, {
       space: toValue(scope).space || undefined,
       spaces: toValue(scope).spaces?.length ? JSON.stringify(toValue(scope).spaces) : undefined
     }, signal),

@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import type { ReactionKey, TaskComment } from '~/types/api'
 import { REACTIONS } from '~/types/api'
-import { formatDateTime, formatTime } from '~/utils/format'
+import { formatDateTime, formatRelative } from '~/utils/format'
 
 // One comment: author, time, sanitised content (server-side, ADR-052), files, reactions and actions.
 // The user's own comments sit on the right in a primary-tinted bubble with a "You" label (client
-// revision 2), so they are told apart by position, colour and text.
-const props = defineProps<{ comment: TaskComment, highlighted?: boolean }>()
+// revision 2), so they are told apart by position, colour and text. The time reads relatively
+// ("3 hours ago") with the exact time on hover; `now` comes from the timeline's single clock.
+const props = defineProps<{ comment: TaskComment, highlighted?: boolean, now?: Date }>()
 const emit = defineEmits<{ changed: [comment: TaskComment] }>()
 const { remove, react } = useCommentMutations()
 const { user } = useSession()
@@ -54,7 +55,7 @@ const menu = computed(() => [
     <div class="flex min-w-0 flex-1 flex-col" :class="mine ? 'items-end' : 'items-start'">
       <div class="flex w-full items-baseline gap-2 text-sm" :class="mine ? 'flex-row-reverse' : ''">
         <span class="font-semibold text-highlighted">{{ mine ? 'You' : comment.author?.fullName }}</span>
-        <time class="text-xs text-muted" :datetime="comment.createdAt" :title="formatDateTime(comment.createdAt)">{{ formatTime(comment.createdAt) }}</time>
+        <time class="text-xs text-muted" :datetime="comment.createdAt" :title="formatDateTime(comment.createdAt)">{{ formatRelative(comment.createdAt, now) }}</time>
         <span v-if="comment.editedAt && !comment.isDeleted" class="text-xs text-muted" :title="`Edited ${formatDateTime(comment.editedAt)}`">(edited)</span>
         <UDropdownMenu v-if="!comment.isDeleted" :items="menu" :content="{ align: 'end' }">
           <UButton icon="i-lucide-ellipsis" color="neutral" variant="ghost" size="xs" square :class="mine ? 'me-auto' : 'ms-auto'" class="opacity-60 group-hover:opacity-100 focus-visible:opacity-100" :aria-label="`Comment actions for ${comment.author?.fullName ?? 'comment'}`" />

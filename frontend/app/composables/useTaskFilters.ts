@@ -22,6 +22,7 @@ export function useTaskFilters(defaults: Partial<TaskListFilters> = {}) {
       myDay: str('myday') === '1',
       statuses: (str('status')?.split(',').filter((s): s is TaskStatus => TASK_STATUSES.includes(s as TaskStatus)) ?? []),
       owners: str('owner')?.split(',').filter(Boolean) ?? [],
+      assignees: str('assignee')?.split(',').filter(Boolean) ?? [],
       priority: PRIORITIES.find(p => p === str('priority')) as Priority | undefined ?? null,
       due: DUE.find(d => d === str('due')) ?? null,
       label: str('label') ?? null,
@@ -45,11 +46,11 @@ export function useTaskFilters(defaults: Partial<TaskListFilters> = {}) {
 
   const activeCount = computed(() => {
     const f = filters.value
-    return [f.important, f.myDay, f.statuses?.length, f.owners?.length, f.spaces?.length, f.priority, f.due, f.label, f.feature, f.release, f.batch, f.q].filter(Boolean).length
+    return [f.important, f.myDay, f.statuses?.length, f.owners?.length, f.assignees?.length, f.spaces?.length, f.priority, f.due, f.label, f.feature, f.release, f.batch, f.q].filter(Boolean).length
   })
 
   function clearFilters() {
-    setQuery({ important: null, myday: null, status: null, owner: null, spaces: null, priority: null, due: null, label: null, feature: null, release: null, batch: null, q: null })
+    setQuery({ important: null, myday: null, status: null, owner: null, assignee: null, spaces: null, priority: null, due: null, label: null, feature: null, release: null, batch: null, q: null })
   }
 
   return { filters, setQuery, activeCount, clearFilters }

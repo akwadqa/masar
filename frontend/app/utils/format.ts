@@ -77,6 +77,23 @@ export function formatDayHeading(value: string, now = new Date()): string {
   return new Intl.DateTimeFormat('en-GB', { timeZone: 'UTC', weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }).format(parseDateOnly(day))
 }
 
+/**
+ * Relative age of a timestamp, worded like Frappe's comments: "just now", "5 minutes ago", "3 hours ago",
+ * "yesterday", "4 days ago", then the calendar date. Days are counted in business time, not in 24-hour steps.
+ */
+export function formatRelative(value: string, now = new Date()): string {
+  const seconds = Math.max(0, (now.getTime() - new Date(value).getTime()) / 1000)
+  const ago = (count: number, unit: string) => `${count} ${unit}${count === 1 ? '' : 's'} ago`
+  if (seconds < 60) return 'just now'
+  if (seconds < 3600) return ago(Math.floor(seconds / 60), 'minute')
+  if (seconds < 86_400) return ago(Math.floor(seconds / 3600), 'hour')
+  const day = businessToday(new Date(value))
+  const days = Math.round((parseDateOnly(businessToday(now)).getTime() - parseDateOnly(day).getTime()) / 86_400_000)
+  if (days <= 1) return 'yesterday'
+  if (days < 7) return ago(days, 'day')
+  return formatDueDate(day, businessToday(now))
+}
+
 /** Short age of a timestamp for notification lists: "now", "5m", "3h", "2d", then the date ("26 Oct"). */
 export function formatAge(value: string, now = new Date()): string {
   const seconds = Math.max(0, (now.getTime() - new Date(value).getTime()) / 1000)

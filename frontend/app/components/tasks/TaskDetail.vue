@@ -115,7 +115,10 @@ async function deleteTask() {
       >
         Drop files to attach them to this task
       </div>
-      <div class="flex-1 space-y-7 overflow-y-auto p-5 sm:p-7">
+      <!-- `relative` makes this scroller the containing block of absolutely positioned descendants
+           (sr-only headings, menu internals). Otherwise they are placed against the outer box, stick out
+           below it and make the side panel's own body scroll, leaving a blank area under the task. -->
+      <div class="relative flex-1 space-y-7 overflow-y-auto p-5 sm:p-7">
         <UAlert
           v-if="!editable"
           color="neutral"

@@ -17,6 +17,8 @@ const props = defineProps<{
   spaces?: SpaceSummary[]
   /** People who own Tasks in this list's Spaces */
   owners?: UserRef[]
+  /** People assigned to Tasks in this list's Spaces */
+  assignees?: UserRef[]
   /** Which side panels this list offers; Feature and Version need a single Space. */
   panels?: FilterPanelKind[]
   /** Side panels that are open (each one independently) */
@@ -55,15 +57,19 @@ const sortItems = computed(() => props.sorts.map(sort => ({ label: sortLabels[so
 const priorityItems = [{ label: 'Any priority', value: 'any' }, ...PRIORITIES.map(priority => ({ label: priority, value: priority }))]
 const labelItems = computed(() => [{ label: 'Any label', value: 'any' }, ...(props.labels ?? []).map(label => ({ label: label.title, value: label.name, chip: { color: label.color } }))])
 const statusItems = TASK_STATUSES.map(status => ({ label: status, value: status, icon: statusStyle(status).icon, ui: { itemLeadingIcon: statusStyle(status).text } }))
-const ownerItems = computed(() => (props.owners ?? []).map(person => ({
+const personItems = (people: UserRef[] | undefined) => (people ?? []).map(person => ({
   label: person.fullName,
   value: person.name,
   avatar: { src: person.image ?? undefined, alt: person.fullName, class: person.image ? undefined : 'masar-avatar', style: person.image ? undefined : avatarStyle(person.name) }
-})))
+}))
+const ownerItems = computed(() => personItems(props.owners))
+const assigneeItems = computed(() => personItems(props.assignees))
 const spaceItems = computed(() => (props.spaces ?? []).map(space => ({ label: space.title, value: space.name })))
-// What the Status, Owner and Space buttons show; their accessible names include it (QA-D10).
-const statusText = computed(() => (props.filters.statuses?.length ? props.filters.statuses.join(', ') : 'Status: active'))
+// What the Status, Owner, Assignee and Space buttons show; their accessible names include it (QA-D10).
+// Task lists show every Task unless statuses are chosen (client request, Oct 2026).
+const statusText = computed(() => (props.filters.statuses?.length ? props.filters.statuses.join(', ') : 'Status: any'))
 const ownerText = computed(() => (props.filters.owners?.length ? ownerItems.value.filter(o => props.filters.owners!.includes(o.value)).map(o => o.label).join(', ') : 'Owner: anyone'))
+const assigneeText = computed(() => (props.filters.assignees?.length ? assigneeItems.value.filter(o => props.filters.assignees!.includes(o.value)).map(o => o.label).join(', ') : 'Assignee: anyone'))
 const spaceText = computed(() => (props.filters.spaces?.length ? spaceItems.value.filter(o => props.filters.spaces!.includes(o.value)).map(o => o.label).join(', ') : 'Space: all'))
 
 function setList(param: string, values: string[]) {
@@ -119,7 +125,7 @@ const toggleLabel = computed(() => (props.singleRow ? 'hidden @[87.5rem]:inline'
       >
         <template #default="{ modelValue }">
           <span class="truncate" :class="(modelValue as string[] | undefined)?.length ? 'text-highlighted' : 'text-dimmed'">
-            {{ (modelValue as string[] | undefined)?.length ? (modelValue as string[]).join(', ') : 'Status: active' }}
+            {{ (modelValue as string[] | undefined)?.length ? (modelValue as string[]).join(', ') : 'Status: any' }}
           </span>
         </template>
       </USelectMenu>
@@ -140,6 +146,23 @@ const toggleLabel = computed(() => (props.singleRow ? 'hidden @[87.5rem]:inline'
           <span class="truncate" :class="(modelValue as string[] | undefined)?.length ? 'text-highlighted' : 'text-dimmed'">
             {{ (modelValue as string[] | undefined)?.length ? ownerItems.filter(o => (modelValue as string[]).includes(o.value)).map(o => o.label).join(', ') : 'Owner: anyone' }}
           </span>
+        </template>
+      </USelectMenu>
+      <USelectMenu
+        v-if="assignees"
+        :model-value="filters.assignees ?? []"
+        :items="assigneeItems"
+        value-key="value"
+        multiple
+        placeholder="Assignee"
+        icon="i-lucide-users"
+        :search-input="{ placeholder: 'Find a person' }"
+        :class="control"
+        :aria-label="`Filter by assignee: ${assigneeText}`"
+        @update:model-value="(values: string[]) => setList('assignee', values)"
+      >
+        <template #default>
+          <span class="truncate" :class="filters.assignees?.length ? 'text-highlighted' : 'text-dimmed'">{{ assigneeText }}</span>
         </template>
       </USelectMenu>
       <USelectMenu

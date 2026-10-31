@@ -7,13 +7,15 @@ import { COMPOSER_SLOT } from '~/utils/pageScroll'
 const props = defineProps<{ space: SpaceDetail }>()
 
 const route = useRoute()
-const { filters, setQuery, activeCount, clearFilters } = useTaskFilters()
+// Every Task by default, completed included (client request, Oct 2026); the Status filter narrows it.
+const { filters, setQuery, activeCount, clearFilters } = useTaskFilters({ completed: 'all' })
 
 const { data: tasks, status, error, refresh } = useTaskList(() => props.space.name, filters)
 const { data: labels } = useSpaceLabels(() => props.space.name)
 const { data: features } = useFeatures(() => props.space.name)
 const { data: releases } = useReleases(() => props.space.name)
 const { data: owners } = useTaskOwners(() => ({ space: props.space.name }))
+const { data: assignees } = useTaskAssignees(() => ({ space: props.space.name }))
 const { input, drafts, commit, retry, discard } = useInlineDrafts(() => props.space.name)
 const controller = useTaskListController(tasks)
 
@@ -64,6 +66,7 @@ watch(() => openPanels.value.join(), () => {
           :filters="filters"
           :labels="labels ?? []"
           :owners="owners ?? []"
+          :assignees="assignees ?? []"
           :panels="panels"
           :open-panels="openPanels"
           :active-names="activeNames"

@@ -412,6 +412,8 @@ export interface TaskListFilters {
   statuses?: TaskStatus[] | null
   /** Task owners (user ids) */
   owners?: string[] | null
+  /** Task assignees (user ids): Tasks assigned to any of them */
+  assignees?: string[] | null
   priority?: Priority | null
   due?: DueFilter | null
   label?: string | null

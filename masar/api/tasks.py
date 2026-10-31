@@ -29,6 +29,7 @@ def _filters(kwargs) -> dict:
 		"my_day": sbool(kwargs.get("my_day")),
 		"statuses": _list(kwargs.get("statuses")),
 		"owners": _list(kwargs.get("owners")),
+		"assignees": _list(kwargs.get("assignees")),
 		"priority": kwargs.get("priority") or None,
 		"due": kwargs.get("due") or None,
 		# One label, or several of the same name from different Spaces (All Tasks).
@@ -56,6 +57,11 @@ def my_work(space: str | None = None, sort: str = "recently_updated", spaces=Non
 @frappe.whitelist(methods=["GET"])
 def owners(space: str | None = None, spaces=None):
 	return task_service.owners(space or None, frappe.parse_json(spaces) if spaces else None)
+
+
+@frappe.whitelist(methods=["GET"])
+def assignees(space: str | None = None, spaces=None):
+	return task_service.assignees(space or None, frappe.parse_json(spaces) if spaces else None)
 
 
 @frappe.whitelist(methods=["GET"])
