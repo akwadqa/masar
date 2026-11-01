@@ -722,6 +722,8 @@ The gateway sends `Cache-Control: private, no-store` for private files, replacin
 - Keyset cursors page in both directions: `before`, `after`, or `anchor`.
 - An anchor (deep link) returns the page starting at that comment, at any depth, without loading the whole thread.
 
+> **Client revision 6 (2026-11-01).** The Workspace no longer shows a window of pages: it reads every page of the chosen view (100 items each) and shows the whole timeline, with no "Show earlier/newer activity" (R3). Deep links load the whole timeline and scroll to the comment; the API cursors and `anchor` remain available. The 20 s refresh replaces the list from the newest page's first item onwards, so new items keep the server order (R2). The Task opens on the All view (R4). See `specs/client-revision-6.md`.
+
 **Views.**
 - All / Comments / History / Worklog.
 - History hides `comment_added` and `comment_edited`; the comments themselves are shown instead. Deletion remains visible as moderation evidence.

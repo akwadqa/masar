@@ -117,7 +117,7 @@ test('7, 11: a comment link opens the comment in a new session; timeline filters
   const manager = await asUser(browser, USERS.manager)
   const first = (await timeline(manager)).items.find(i => i.kind === 'comment' && !i.comment.isDeleted)
   const commentName = first && first.kind === 'comment' ? first.comment.name : ''
-  // Push it off the newest page so the link must locate it.
+  // Push it off the newest page: the whole timeline is loaded, so the link still finds it (client revision 6, R3).
   for (let i = 0; i < 35; i++) {
     await api(manager, 'masar.api.comments.create', { task, content: `<p>${run} filler ${i}</p>`, client_request_id: crypto.randomUUID() })
   }
@@ -128,7 +128,7 @@ test('7, 11: a comment link opens the comment in a new session; timeline filters
   const target = member.locator(`[data-comment="${commentName}"]`)
   await expect(target).toBeInViewport()
   await expect(target).toHaveClass(/ring-2/)
-  await expect(member.getByRole('button', { name: 'Show newer activity' })).toBeVisible()
+  await expect(member.getByRole('button', { name: /Show (newer|earlier) activity/ })).toHaveCount(0)
   await member.goto(`/masar/tasks/${task}`)
   await member.getByRole('tab', { name: 'History' }).click()
   await expect(member.getByText(/created the task/)).toBeVisible()

@@ -140,7 +140,7 @@ The Task panel (`USlideover`) opens over any list by adding `?task=:id` to the c
 
 ### 3.6 Shared comment navigation
 
-> **Implemented (Phase 6).** Links use `/tasks/:task?comment=:id` (page) or `?task=…&comment=…` (panel). The timeline requests the page anchored at the comment (`comments.timeline?anchor=`), so no separate `locate` call is needed, and it works at any depth. The comment is scrolled into view and highlighted for 4 s. No access gives "Task not found". Deleted comments show a placeholder.
+> **Implemented (Phase 6).** Links use `/tasks/:task?comment=:id` (page) or `?task=…&comment=…` (panel). Since client revision 6 (2026-11-01) the timeline loads every item and opens on All; the comment is found in the loaded list, so no separate `locate` call is needed, and it works at any depth. The comment is scrolled into view and highlighted for 4 s. No access gives "Task not found". Deleted comments show a placeholder.
 
 `/tasks/:task?comment=:id` → page loads the Task (404 view if no access), then `comments.locate` returns the page cursor containing the comment; the timeline loads that window, scrolls the comment into view, highlights it for 2 s and moves focus to it (accessible). A deleted comment shows its placeholder. Copy-link is available in each comment's menu.
 

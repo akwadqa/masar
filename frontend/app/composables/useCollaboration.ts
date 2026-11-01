@@ -1,96 +1,87 @@
 import type { AttachmentRef, ReactionKey, TaskAttachment, TaskComment, TimeEntry, TimelineItem, TimelinePage, TimelineView, TimeResult, UserRef } from '~/types/api'
 import { MasarApiError, toApiError } from '~/utils/apiError'
+import { mergeNewestPage } from '~/utils/timelineMerge'
 
 const POLL_MS = 20_000
+// The server's page maximum; the poll only needs the newest few items to find its overlap.
+const PAGE_SIZE = 100
+const POLL_SIZE = 30
+// Safety stop for very long timelines (10,000 items).
+const MAX_PAGES = 100
 
 /**
- * A Task's timeline as a window of pages (ADR-057). Starts at the newest page, or at a comment for
- * deep links; earlier/later pages are added on demand. While visible it refreshes the newest page every
- * 20 s and on focus (permission-checked HTTP, no websocket — ADR-058), so other people's comments appear.
+ * A Task's whole timeline for one view, oldest first in server order (client revision 6, R3: nothing is
+ * hidden behind "show earlier", superseding ADR-057's windowing). Pages are read until the start. While
+ * visible it refreshes the newest page every 20 s and on focus (permission-checked HTTP, no websocket —
+ * ADR-058) and merges it by position, so other people's comments appear in order (R2).
  */
-export function useTimeline(task: MaybeRefOrGetter<string>, view: MaybeRefOrGetter<TimelineView>, anchor?: MaybeRefOrGetter<string | null>) {
+export function useTimeline(task: MaybeRefOrGetter<string>, view: MaybeRefOrGetter<TimelineView>) {
   const api = useMasarApi()
   const items = ref<TimelineItem[]>([])
-  const earlierCursor = ref<string | null>(null)
-  const laterCursor = ref<string | null>(null)
   const status = ref<'idle' | 'pending' | 'success' | 'error'>('idle')
   const error = ref<MasarApiError | null>(null)
-  const loadingMore = ref(false)
+  // A load answer is used only if no newer load started; a refresh answer only if nothing changed the
+  // list meanwhile (a load, or a comment or time entry added here), so it never hides a newer item.
+  let generation = 0
+  let version = 0
 
   async function fetchPage(params: Record<string, string | number | undefined>) {
-    return api.get<TimelinePage>('masar.api.comments.timeline', { task: toValue(task), view: toValue(view), limit: 30, ...params })
+    return api.get<TimelinePage>('masar.api.comments.timeline', { task: toValue(task), view: toValue(view), ...params })
   }
 
   async function load() {
+    const current = ++generation
+    version++
     status.value = 'pending'
     error.value = null
     try {
-      const target = toValue(anchor) ?? undefined
-      const page = await fetchPage(target ? { anchor: target } : {})
-      items.value = page.items
-      earlierCursor.value = page.earlierCursor
-      laterCursor.value = page.laterCursor
+      let page = await fetchPage({ limit: PAGE_SIZE })
+      let all = page.items
+      for (let pages = 1; page.earlierCursor && pages < MAX_PAGES; pages++) {
+        page = await fetchPage({ limit: PAGE_SIZE, before: page.earlierCursor })
+        all = [...page.items, ...all]
+      }
+      if (current !== generation) return
+      items.value = all
       status.value = 'success'
     } catch (caught) {
+      if (current !== generation) return
       error.value = caught instanceof MasarApiError ? caught : toApiError(500, null)
       status.value = 'error'
     }
   }
 
-  async function loadEarlier() {
-    if (!earlierCursor.value || loadingMore.value) return
-    loadingMore.value = true
-    try {
-      const page = await fetchPage({ before: earlierCursor.value })
-      const known = new Set(items.value.map(i => i.id))
-      items.value = [...page.items.filter(i => !known.has(i.id)), ...items.value]
-      earlierCursor.value = page.earlierCursor
-    } finally {
-      loadingMore.value = false
-    }
-  }
-
-  async function loadLater() {
-    if (!laterCursor.value || loadingMore.value) return
-    loadingMore.value = true
-    try {
-      const page = await fetchPage({ after: laterCursor.value })
-      const known = new Set(items.value.map(i => i.id))
-      items.value = [...items.value, ...page.items.filter(i => !known.has(i.id))]
-      laterCursor.value = page.laterCursor
-    } finally {
-      loadingMore.value = false
-    }
-  }
-
-  /** Re-read the newest page and merge it: new items are appended, changed ones replaced. */
   async function refreshNewest() {
-    if (laterCursor.value || status.value !== 'success') return
+    if (status.value !== 'success') return
+    const seen = version
     try {
-      const page = await fetchPage({})
-      const fresh = new Map(page.items.map(i => [i.id, i]))
-      const known = new Set(items.value.map(i => i.id))
-      items.value = [...items.value.map(i => fresh.get(i.id) ?? i), ...page.items.filter(i => !known.has(i.id))]
+      const page = await fetchPage({ limit: POLL_SIZE })
+      if (seen !== version) return
+      const merged = mergeNewestPage(items.value, page.items, !!page.earlierCursor)
+      if (merged) items.value = merged
+      else void load()
     } catch { /* the next poll retries; errors on explicit actions are shown there */ }
   }
 
   function upsertComment(comment: TaskComment) {
     const id = `comment:${comment.name}`
     const item: TimelineItem = { kind: 'comment', id, at: comment.createdAt, comment }
+    version++
     const index = items.value.findIndex(i => i.id === id)
     if (index >= 0) items.value.splice(index, 1, item)
-    else if (!laterCursor.value) items.value = [...items.value, item]
+    else if (toValue(view) !== 'history' && toValue(view) !== 'worklog') items.value = [...items.value, item]
   }
 
   function upsertEntry(entry: TimeEntry) {
     const id = `time:${entry.name}`
     const item: TimelineItem = { kind: 'time', id, at: entry.loggedAt, entry }
+    version++
     const index = items.value.findIndex(i => i.id === id)
     if (index >= 0) items.value.splice(index, 1, item)
-    else if (!laterCursor.value && ['all', 'worklog'].includes(toValue(view))) items.value = [...items.value, item]
+    else if (['all', 'worklog'].includes(toValue(view))) items.value = [...items.value, item]
   }
 
-  watch(() => [toValue(task), toValue(view), toValue(anchor)], () => void load(), { immediate: true })
+  watch(() => [toValue(task), toValue(view)], () => void load(), { immediate: true })
 
   if (import.meta.client) {
     let timer: ReturnType<typeof setInterval> | undefined
@@ -105,7 +96,7 @@ export function useTimeline(task: MaybeRefOrGetter<string>, view: MaybeRefOrGett
     })
   }
 
-  return { items, earlierCursor, laterCursor, status, error, loadingMore, load, loadEarlier, loadLater, refreshNewest, upsertComment, upsertEntry }
+  return { items, status, error, load, refreshNewest, upsertComment, upsertEntry }
 }
 
 export function useTaskAttachments(task: MaybeRefOrGetter<string>) {

@@ -4,24 +4,31 @@ import { describeHistory } from '~/utils/history'
 import { useNow } from '@vueuse/core'
 import { businessToday, formatDayHeading, formatTime } from '~/utils/format'
 
-// Comments | History | Worklog (plus All). Comments is the view a Task opens on (client revision 5).
-// Newest first with the composer on top (client request, Oct 2026; supersedes ADR-057's oldest-first
-// display). useTimeline keeps items oldest first because its cursors and polling depend on that order;
+// All | Comments | History | Worklog. A Task opens on All, also from an e-mail link (client revision 6,
+// R4, 2026-11-01; supersedes revision 5's Comments default). The whole timeline is shown, nothing is
+// hidden behind "show earlier" (R3). Newest first with the composer on top (client request, Oct 2026);
+// useTimeline keeps items oldest first in server order because its polling merge depends on it, and
 // only this view reverses them.
 const props = defineProps<{ task: string, canComment: boolean, focusComment?: string | null }>()
 const emit = defineEmits<{ logTime: [] }>()
-const view = ref<TimelineView>('comments')
+const view = ref<TimelineView>('all')
+// A deep-linked comment (?comment=) to scroll to and mark once it is loaded.
 const anchor = ref<string | null>(props.focusComment ?? null)
-watch(() => props.focusComment, (value) => { if (value) { anchor.value = value; view.value = 'comments' } })
-const timeline = useTimeline(() => props.task, view, anchor)
+watch(() => props.focusComment, (value) => {
+  if (!value) return
+  anchor.value = value
+  if (view.value !== 'all' && view.value !== 'comments') view.value = 'all'
+})
+const timeline = useTimeline(() => props.task, view)
 const highlighted = ref<string | null>(null)
 
-// Deep link: once the page holding the comment has loaded, bring it into view and mark it.
+// Deep link: once the timeline has loaded, bring the comment into view and mark it, once.
 watch(() => [timeline.status.value, anchor.value] as const, async ([state, target]) => {
   if (state !== 'success' || !target) return
   await nextTick()
   const element = document.getElementById(`comment-${target}`)
   if (element) {
+    anchor.value = null
     element.scrollIntoView({ block: 'center', behavior: 'smooth' })
     highlighted.value = target
     setTimeout(() => { if (highlighted.value === target) highlighted.value = null }, 4000)
@@ -35,7 +42,6 @@ const views = [
   { label: 'Worklog', value: 'worklog' }
 ]
 function setView(value: string | number) {
-  anchor.value = null
   view.value = value as TimelineView
 }
 function onTimeChanged(result: TimeResult) {
@@ -56,7 +62,6 @@ const startsDay = (index: number) => {
 
 function onSaved(comment: TaskComment) {
   timeline.upsertComment(comment)
-  if (timeline.laterCursor.value) void timeline.load()
 }
 </script>
 
@@ -75,7 +80,6 @@ function onSaved(comment: TaskComment) {
       </div>
       <UAlert v-else-if="timeline.status.value === 'error'" color="error" variant="subtle" icon="i-lucide-cloud-off" :title="timeline.error.value?.message ?? 'Activity could not be loaded'" :actions="[{ label: 'Try again', onClick: () => timeline.load() }]" />
       <template v-else>
-        <UButton v-if="timeline.laterCursor.value" size="xs" color="neutral" variant="link" icon="i-lucide-chevrons-up" label="Show newer activity" :loading="timeline.loadingMore.value" @click="timeline.loadLater()" />
         <div v-if="!timeline.items.value.length && view === 'worklog'" class="flex flex-wrap items-center gap-3 text-sm text-muted">
           No time logged yet.
           <UButton v-if="canComment" size="xs" color="neutral" variant="outline" icon="i-lucide-timer" label="Log time" @click="emit('logTime')" />
@@ -97,7 +101,6 @@ function onSaved(comment: TaskComment) {
             </p>
           </li>
         </ol>
-        <UButton v-if="timeline.earlierCursor.value" size="xs" color="neutral" variant="link" icon="i-lucide-chevrons-down" label="Show earlier activity" :loading="timeline.loadingMore.value" @click="timeline.loadEarlier()" />
       </template>
   </section>
 </template>

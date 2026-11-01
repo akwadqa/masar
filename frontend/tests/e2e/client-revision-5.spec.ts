@@ -142,10 +142,10 @@ test('R7, R8: Space identity is an even grid; categories are a list you can add 
   await manager.context().close()
 })
 
-test('R9, R14: copied task links open the task; Activity opens on Comments', async ({ browser, browserName }) => {
+test('R9, R14: copied task links open the task; Activity opens on All (client revision 6, R4)', async ({ browser, browserName }) => {
   const manager = await asUser(browser, USERS.manager, `/masar/spaces/${alpha}/tasks?task=${tasks.panel}`)
   const panel = manager.getByRole('dialog')
-  await expect(panel.getByRole('tab', { name: 'Comments' })).toHaveAttribute('aria-selected', 'true')
+  await expect(panel.getByRole('tab', { name: 'All' })).toHaveAttribute('aria-selected', 'true')
   // WebKit lets no test read the clipboard: there, the link the app writes is recorded on its way in.
   await manager.evaluate(() => {
     const write = navigator.clipboard.writeText.bind(navigator.clipboard)
