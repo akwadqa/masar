@@ -91,6 +91,9 @@ Batches are called Batches in both (`Masar Batch`, routes `/batches`). They were
 - If a change affects other features (behaviour, URLs, permissions, shared components, API contracts, existing data), list the impact and get the client's go-ahead before implementing.
 - Verify locally (ruff, typecheck, vitest, `build:app`, `check:app`, with an LF worktree: `core.autocrlf=false`), then copy the changed files to the app for the client to evaluate and confirm that the server tree matches the local tree. Python changes need a restart of the bench web and worker processes.
 - Commit only after the client approves, one logical change per commit. Minor changes: push `master`. Big changes: push the branch and open a PR; the client merges it. Then move the server's checkout to the resulting `master` commit.
+- Delete a branch once its PR is merged (on GitHub and locally), but only when its content is on `master`; report any unmerged branch instead of deleting it.
+- Avoid stacked PRs (a branch based on another open PR). GitHub retargets the next PR to `master` only when its base branch is deleted after merging, so a stacked PR can be merged into the old branch and never reach `master`. If stacking is unavoidable, set the next PR's base to `master` before it is merged.
+- The built Workspace is committed on every branch, so builds of different branches conflict. Work built while PRs are open goes on top of them for evaluation, and reaches `master` only after those PRs are merged (rebuilt there).
 - This repository is public: never commit server hosts, user names, paths or the names of other sites. Environment details live in each developer's private Claude memory and skills.
 - Client decisions are final once given: record them with their date in `specs/` or `docs/` and in code comments, and update any document they contradict.
 
