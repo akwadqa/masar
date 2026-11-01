@@ -12,7 +12,7 @@ Decisions recorded here are final (CLAUDE.md, "Client decisions are final once g
 | R3 | Do not hide older comments behind "Show earlier activity". | Timeline pages of 30 with before/after/anchor cursors (ADR-057). | The timeline loads every item of the chosen view (pages are fetched until the end). A deep link scrolls to and highlights the comment. Supersedes ADR-057's windowing. |
 | R4 | The timeline opens on "All". | Opened on Comments (client revision 5, R14). | Default view "All", also for e-mail deep links. |
 | R5 | 12-hour clock. | `formatTime` was 24-hour (`en-GB`); `formatDateTime` already 12-hour. | `formatTime` gives e.g. "2:05 PM". |
-| R6 | Mobile: choosing a filter field freezes the page. | The modal "+ Filter" menu locks the body (pointer events, scroll, iOS touchmove) and the values picker opens while it is still closing; on iOS the lock can stay. | Non-modal filter menus; the values picker opens after the menu has closed. Needs confirmation on a phone. |
+| R6 | Mobile: choosing a filter field freezes the page. | The modal "+ Filter" menu locks the body (pointer events, scroll, iOS touchmove) and the values picker opens while it is still closing; on iOS the lock can stay. | Non-modal filter menus; the values picker opens after the menu has closed. Confirmed on the client's phone (2026-11-02). |
 | R7 | Task lists show active Tasks by default again. | Since 8f0c589 (2026-10-31) the lists showed all Tasks. | Default = active (Open, Working, Pending Review, Changes Required, Overdue). Choosing a Status filter shows any status. Reverses the 2026-10-31 decision. |
 
 ## Group 2: task list views (branch `feat/task-list-views`, PR)
