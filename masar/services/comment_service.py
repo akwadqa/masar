@@ -254,7 +254,7 @@ def create(
 		if not existing:
 			concurrent_duplicate()
 		return {"comment": get_comment(existing), "created": False}
-	# Bell entries for mentioned people, assignees and owner (client revision 5).
+	# Bell entries for mentioned people, the owner and assignees, and the other members (client revision 6).
 	inbox_service.for_comment(task, doc.name, mentioned, preview(doc))
 	# Notifications are built after commit, from the then-current membership (ADR-056).
 	frappe.enqueue(
@@ -350,6 +350,9 @@ def react(comment_name: str, emoji: str, active: bool) -> dict:
 				).insert()
 			except (frappe.DuplicateEntryError, frappe.UniqueValidationError):
 				frappe.db.rollback(save_point="masar_reaction")  # a concurrent identical reaction won
+			else:
+				# The comment's author hears about it, without e-mail (client revision 6).
+				inbox_service.for_reaction(doc, emoji)
 		elif not active and existing:
 			frappe.delete_doc("Masar Comment Reaction", existing)
 	return get_comment(doc.name)

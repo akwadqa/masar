@@ -31,7 +31,7 @@ from masar.permissions import (
 	require_task_access,
 	require_task_write,
 )
-from masar.services import task_filters
+from masar.services import inbox_service, task_filters
 from masar.services.batch_service import batch_refs, move_tasks
 from masar.services.personal.my_day_service import my_day_subquery, my_day_tasks, set_my_day
 from masar.services.planning_service import planning_refs
@@ -905,7 +905,8 @@ def bulk_update(task_names: list[str], operation: str, value=None, expected: dic
 			)
 
 	changed = []
-	with masar_service():
+	# Status changes in a bulk edit notify each person once (client revision 6).
+	with masar_service(), inbox_service.collect_status_changes():
 		for doc in docs:
 			before = doc.as_dict()
 			if operation == "priority":

@@ -430,16 +430,31 @@ class TestNotifications(CollaborationCase):
 			"Masar Comment Notification", filters={"comment": comment}, fields=["recipient", "kind", "status"]
 		)
 		recipients = {r.recipient: r for r in rows}
-		self.assertEqual(set(recipients), {email("a_manager"), email("a_member")})
+		# Client revision 6: e-mail goes to the Task's owner and assignees and the mentioned members,
+		# never to the author (a_manager owns the Task and wrote the comment).
+		self.assertEqual(set(recipients), {email("a_member")})
 		self.assertEqual(recipients[email("a_member")].kind, "Mention")
 		self.assertTrue(all(r.status == "Queued" for r in rows))  # sending is exercised by the E2E mail test
 		self.assertEqual(
 			notification_service.notify_comment(comment, commit=False),
 			{"skipped": "already processed or missing"},
 		)
-		self.assertEqual(frappe.db.count("Masar Comment Notification", {"comment": comment}), 2)
+		self.assertEqual(frappe.db.count("Masar Comment Notification", {"comment": comment}), 1)
 		space = frappe.get_doc("Masar Space", self.A)
 		clear_membership_cache()
+
+	def test_comment_email_reaches_owner_and_assignees_but_not_the_author_or_others(self):
+		# a_manager owns the Task; ab_member is assigned; a_member writes; nobody is mentioned.
+		task_service.add_assignee(self.task, email("ab_member"))
+		as_user("a_member")
+		comment = comments.create(self.task, "<p>Progress update</p>", _key())["comment"]["name"]
+		frappe.set_user("Administrator")
+		notification_service.notify_comment(comment, commit=False)
+		rows = frappe.get_all(
+			"Masar Comment Notification", filters={"comment": comment}, fields=["recipient", "kind"]
+		)
+		self.assertEqual({r.recipient for r in rows}, {email("a_manager"), email("ab_member")})
+		self.assertTrue(all(r.kind == "Comment" for r in rows))
 
 	def test_deleted_comment_sends_nothing(self):
 		comment = _comment(self.task)["name"]

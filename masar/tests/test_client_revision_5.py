@@ -19,6 +19,7 @@ from masar.services import (
 	attachment_service,
 	comment_service,
 	inbox_service,
+	notification_service,
 	push_service,
 	space_service,
 	task_service,
@@ -177,18 +178,101 @@ class TestNotifications(IntegrationTestCase):
 		self.assertFalse(items[0]["isRead"])
 		self.assertEqual(_inbox("a_member"), [])
 
-	def test_owner_change_and_overdue(self):
+	def _fresh_inbox(self):
+		frappe.set_user("Administrator")
+		frappe.db.delete("Masar Notification")
+		frappe.local.masar_inbox = None
+
+	def test_owner_change_notifies_the_new_owner_and_overdue_the_owner_and_assignees(self):
 		as_user("a_member")
 		task = _task(self.world["A"], "Late work")
 		task_service.add_assignee(task, email("ab_member"))
+		task_service.add_assignee(task, email("a_manager"))
+		self._fresh_inbox()
+		as_user("a_member")
 		task_service.set_owner(task, email("ab_member"))
-		frappe.set_user("Administrator")
-		frappe.db.delete("Masar Notification")
+		self.assertEqual([i["kind"] for i in _inbox("ab_member")], ["Task Owner"])
+		self.assertEqual(_inbox("a_manager"), [], "only the new owner hears about an owner change")
+		self._fresh_inbox()
 		frappe.db.set_value("Masar Task", task, "due_date", add_days(nowdate(), -1))
 		task_service.mark_overdue()
-		for key in ("a_member", "ab_member"):
+		# Client revision 6: the owner (ab_member, also assigned) and the assignees.
+		for key in ("ab_member", "a_manager"):
 			self.assertEqual([i["kind"] for i in _inbox(key)], ["Overdue"], key)
-		self.assertIsNone(_inbox("a_member")[0]["actor"])
+		self.assertEqual(_inbox("a_member"), [], "the former owner is neither owner nor assignee")
+		self.assertIsNone(_inbox("ab_member")[0]["actor"])
+
+	def test_status_change_notifies_the_owner_and_assignees_only(self):
+		as_user("a_member")
+		task = _task(self.world["A"], "Status work")
+		task_service.add_assignee(task, email("ab_member"))
+		self._fresh_inbox()
+		as_user("ab_member")
+		task_service.update(task, {"status": "Working"})
+		items = _inbox("a_member")
+		self.assertEqual([i["kind"] for i in items], ["Status"])
+		self.assertIn("Working", items[0]["subject"])
+		self.assertEqual(items[0]["link"], f"/tasks/{task}")
+		self.assertEqual(_inbox("ab_member"), [], "never the person who changed it")
+		self.assertEqual(_inbox("a_manager"), [], "other members hear only about comments")
+		status = frappe.db.get_value(
+			"Masar Notification", {"recipient": email("a_member"), "kind": "Status"}, "email_status"
+		)
+		self.assertEqual(status, "Queued")
+
+	def test_bulk_status_change_sends_one_summary_per_person(self):
+		as_user("a_member")
+		first = _task(self.world["A"], "Bulk one")
+		second = _task(self.world["A"], "Bulk two")
+		task_service.add_assignee(first, email("ab_member"))
+		self._fresh_inbox()
+		as_user("a_manager")
+		task_service.bulk_update([first, second], "set_status", "Working")
+		owner_items = _inbox("a_member")
+		self.assertEqual([i["kind"] for i in owner_items], ["Status"], "one summary, not one per task")
+		self.assertIn("2 tasks", owner_items[0]["subject"])
+		self.assertIsNone(owner_items[0]["task"])
+		assignee_items = _inbox("ab_member")
+		self.assertEqual(
+			[i["link"] for i in assignee_items], [f"/tasks/{first}"], "one task: the usual entry"
+		)
+		self.assertEqual(_inbox("a_manager"), [])
+
+	def test_reaction_notifies_the_comment_author_without_email(self):
+		as_user("a_member")
+		task = _task(self.world["A"], "React")
+		comment = comment_service.create(task, "<p>Done</p>", "r6-react-0001")["comment"]["name"]
+		self._fresh_inbox()
+		as_user("ab_member")
+		comment_service.react(comment, "thumbs_up", True)
+		items = _inbox("a_member")
+		self.assertEqual([i["kind"] for i in items], ["Reaction"])
+		self.assertEqual(items[0]["link"], f"/tasks/{task}?comment={comment}")
+		self.assertFalse(
+			frappe.db.get_value("Masar Notification", {"recipient": email("a_member")}, "email_status")
+		)
+		self.assertEqual(_inbox("a_manager"), [])
+		as_user("ab_member")
+		comment_service.react(comment, "thumbs_up", False)
+		as_user("a_member")
+		comment_service.react(comment, "heart", True)  # reacting to one's own comment notifies nobody
+		self.assertEqual(len(_inbox("a_member")), 1)
+
+	def test_comment_reaches_other_members_in_the_bell_only(self):
+		as_user("a_member")
+		task = _task(self.world["A"], "Audience")
+		self._fresh_inbox()
+		as_user("ab_member")
+		comment = comment_service.create(task, "<p>Update</p>", "r6-comment-0001")["comment"]["name"]
+		self.assertEqual([i["kind"] for i in _inbox("a_member")], ["Comment"])  # the owner
+		self.assertEqual([i["kind"] for i in _inbox("a_manager")], ["Comment"])  # another member
+		self.assertEqual(_inbox("ab_member"), [], "never the author")
+		frappe.set_user("Administrator")
+		notification_service.notify_comment(comment, commit=False)
+		recipients = frappe.get_all(
+			"Masar Comment Notification", filters={"comment": comment}, pluck="recipient"
+		)
+		self.assertEqual(recipients, [email("a_member")], "e-mail only for owner, assignees, mentions")
 
 	def test_space_membership_role_and_ownership(self):
 		as_user("a_manager")

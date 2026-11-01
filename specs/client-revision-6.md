@@ -24,14 +24,21 @@ Decisions recorded here are final (CLAUDE.md, "Client decisions are final once g
 
 ## Group 3: notification rules (branch `feat/notification-rules`, PR)
 
-Rules (client, 2026-11-01):
+Rules (client, 2026-11-01 and 2026-11-02; the 2026-11-02 refinement narrowed who hears about what):
 
-1. Nobody is notified of their own activity (also no e-mail to the comment author; reverses ADR-056 / Q-P6-1).
-2. Task owner, assignees and mentioned users: e-mail + push + in-app.
-3. All other Space members: push + in-app, no e-mail.
-4. Activities that notify (decision 2026-11-01, "key events"): new comments, status changes, assignment, task owner changes, Overdue.
-5. Reactions to a comment: push + in-app to the comment's author only, no e-mail (decision 2026-11-01).
-6. Bulk status changes: one summary notification per recipient (e-mail tier: one e-mail), not one per Task (decision 2026-11-01).
+| Event | Task owner, assignees, mentioned | Other Space members | The actor |
+|---|---|---|---|
+| New comment | e-mail + push + bell (mentioned: "mentioned you") | push + bell | nothing (reverses ADR-056 / Q-P6-1) |
+| Status change | owner + assignees: e-mail + push + bell | nothing | nothing |
+| Assignment | only the new assignee: e-mail + push + bell (unchanged) | nothing | nothing |
+| Owner change | only the new owner: e-mail + push + bell (unchanged) | nothing | nothing |
+| Overdue | owner + assignees: e-mail + push + bell (the owner is new) | nothing | (automatic) |
+| Reaction to a comment | only the comment's author: push + bell, no e-mail | nothing | nothing |
+| Bulk status change | one summary per person (owner/assignee of any changed Task), not one per Task | nothing | nothing |
+
+Space events (member added, role changed, ownership transferred) and all other Task changes are unchanged.
+New notification kinds: Status and Reaction (`Masar Notification.kind` options; the site reloads that
+DocType when deployed).
 
 The user's e-mail switch keeps muting e-mail. Docs (ADR-056, ADR-064, docs/01, docs/04 §6-7, docs/08 AS-15) and tests are updated with the change.
 

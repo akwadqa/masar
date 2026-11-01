@@ -200,7 +200,7 @@ The person finishing a Batch (owner/Planner) may not see every Space. `batch_ser
 > - **Downloads:** follow **current** Space membership, including for the uploader, via the File permission hook and the `File.is_downloadable` extension. Frappe alone would always allow the uploader.
 > - **Caching:** the gateway sends `Cache-Control: private, no-store` on private files.
 > - **Mentions:** non-member ids are dropped server-side (the sanitiser removes `data-id`).
-> - **Notifications:** ADR-056; the author is included pending Q-P6-1.
+> - **Notifications:** ADR-056 and ADR-064; since client revision 6 (2026-11-01) the author is never notified and comment e-mail goes to the Task's owner, assignees and mentioned members only.
 >
 > See ADR-051 to ADR-056.
 
@@ -225,7 +225,7 @@ Every entry is attributed to the signed-in user (`worker`). Removed members' ent
 ## 7. Notifications
 
 - Trigger: `comment_service.post` commits the comment, then `frappe.enqueue(..., enqueue_after_commit=True)`.
-- Recipients are computed **in the job**, at send time: current Space members, enabled users, minus the author, de-duplicated by email address. Mentioned users get the "mentioned you" subject variant; nobody gets two emails for one comment.
+- Recipients are computed **in the job**, at send time (client revision 6, 2026-11-01): the Task's owner and assignees and the mentioned members who are current, enabled Space members, minus the author. Mentioned users get the "mentioned you" subject variant; nobody gets two emails for one comment. Other Space members get the comment in the bell and as a push only (ADR-064).
 - The job reloads the comment and Task; if either is deleted, or the comment is soft-deleted, it sends nothing.
 - Email body contains the Task title, Space title, comment excerpt (sanitised, plain-text rendering) and a deep link. No other Space data.
 - Failures: Frappe Email Queue retries; failures are logged against the Comment (`Error Log` with reference); the user action is never blocked by email failure.

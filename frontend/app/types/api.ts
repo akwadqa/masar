@@ -621,7 +621,7 @@ export interface TimerStopResult extends TimerSession {
 
 // --------------------------------------------------------------------------- notifications (client revision 5)
 
-export type NotificationKind = 'Assigned' | 'Task Owner' | 'Overdue' | 'Mention' | 'Comment' | 'Space Member' | 'Space Role' | 'Space Owner'
+export type NotificationKind = 'Assigned' | 'Task Owner' | 'Overdue' | 'Mention' | 'Comment' | 'Space Member' | 'Space Role' | 'Space Owner' | 'Status' | 'Reaction'
 
 export interface MasarNotification {
   name: string

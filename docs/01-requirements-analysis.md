@@ -241,7 +241,7 @@ Q-02 and Q-09 are implemented with restrictive provisional policies ([11](11-app
 | MASAR-COLLAB-001 | MASAR-API-016, MASAR-UI-014 | ADR-057 | `TestTimeline`, E2E 7, 11 |
 | MASAR-COLLAB-002 | MASAR-API-014, MASAR-UI-014 | ADR-051 | `test_create_list_and_idempotency_N`, `test_C_D_…`, E2E 1–5 |
 | MASAR-COLLAB-003 | MASAR-API-014 | ADR-051 (provisional Q-04 default) | `test_C_D_ownership_and_moderation`, E2E 4–6 |
-| MASAR-COLLAB-004 | MASAR-API-017 | ADR-056 (author included pending Q-P6-1; external SMTP Pending) | `TestNotifications`, E2E 12 (mail sink, local only) |
+| MASAR-COLLAB-004 | MASAR-API-017 | ADR-056, ADR-064 (client revision 6: owner, assignees and mentions by e-mail, other members bell and push, never the author; external SMTP Pending) | `TestNotifications`, E2E 12 (mail sink, local only) |
 | MASAR-COLLAB-005 | MASAR-API-014, MASAR-UI-014 | ADR-052 | `test_F_mentions_are_members_only`, E2E 1–3 |
 | MASAR-COLLAB-006 | MASAR-API-014 | ADR-053 | `test_M_reactions_are_unique_and_own`, E2E 6, 13 |
 | MASAR-COLLAB-007 | MASAR-API-016, MASAR-UI-014 | ADR-057 | `test_H_anchor_reaches_old_comments`, E2E 7, 10 |
