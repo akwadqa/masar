@@ -1,5 +1,7 @@
 <script setup lang="ts">
-import type { TaskListRow, TaskSort } from '~/types/api'
+import type { TaskFilterField, TaskListRow, TaskSort } from '~/types/api'
+import { toggleChipValue } from '~/utils/taskFilterChips'
+import { sortTasks } from '~/utils/taskSort'
 
 // All Tasks: every Task the user can see across their Spaces, as a list (client revision 3). "Group by
 // Batch" turns it into the planning board: a box per current Batch with its Task rows and the Backlog,
@@ -11,8 +13,16 @@ const route = useRoute()
 // Active Tasks by default (Open, Working, Pending Review, Changes Required, Overdue); choosing a Status
 // shows any status (client revision 6, R7, 2026-11-01; reverses the Oct 2026 "all Tasks" default).
 const SORTS: TaskSort[] = ['recently_updated', 'created']
-const { filters, setQuery, activeCount, clearFilters } = useTaskFilters({ sort: 'recently_updated' }, SORTS)
+// Filters are remembered in this browser; header sorting and clicking a Space or Priority cell work as
+// in Frappe Desk (client revision 6, 2026-11-01).
+const { filters, columnSort, setQuery, sortByColumn, activeCount, clearFilters } = useTaskFilters({ sort: 'recently_updated' }, SORTS, { storageKey: 'all' })
 const { data: tasks, status, error, refresh } = useMyWork(filters)
+const spaceLookup = useSpaceLookup()
+const sortedTasks = computed(() => tasks.value && sortTasks(tasks.value, columnSort.value, task => task.spaceTitle || spaceLookup(task.space)?.title || task.space))
+const FILTERABLE: TaskFilterField[] = ['space', 'priority']
+function filterByCell(field: TaskFilterField, value: string) {
+  setQuery(toggleChipValue(filters.value, field, value))
+}
 const { data: spaces } = useSpaceList('mine')
 const mySpaces = computed(() => (spaces.value ?? []).filter(space => space.role))
 const scope = computed(() => filters.value.spaces ?? [])
@@ -21,7 +31,7 @@ const { data: labels } = useSpaceLabels(singleSpace)
 const { data: owners } = useTaskOwners(() => ({ spaces: scope.value }))
 const { data: assignees } = useTaskAssignees(() => ({ spaces: scope.value }))
 const { data: manageable } = useManageableBatches()
-const controller = useTaskListController(tasks, { persistentSelection: true })
+const controller = useTaskListController(sortedTasks, { persistentSelection: true })
 // "sprint" is the value of links made while Batches were called Sprints (client revision 4, reverted
 // 2026-10-31).
 const grouped = computed(() => route.query.group === 'batch' || route.query.group === 'sprint')
@@ -89,7 +99,7 @@ defineShortcuts({ escape: () => { if (controller.selected.value.size && !activeT
             </StatePanel>
             <BatchBoard
               v-else-if="grouped"
-              :tasks="tasks ?? []"
+              :tasks="sortedTasks ?? []"
               :controller="controller"
               :active-task="activeTask"
               :batch-filter="filters.batch"
@@ -106,7 +116,7 @@ defineShortcuts({ escape: () => { if (controller.selected.value.size && !activeT
             <div v-else class="overflow-hidden rounded-card border border-default bg-default list-scroll:h-full list-scroll:min-h-[24rem]">
               <TaskList
                 page-scroll
-                :tasks="tasks ?? []"
+                :tasks="sortedTasks ?? []"
                 :drafts="[]"
                 :active-task="activeTask"
                 :can-create="false"
@@ -114,7 +124,12 @@ defineShortcuts({ escape: () => { if (controller.selected.value.size && !activeT
                 :selected="controller.selected.value"
                 :expanded="controller.expanded.value"
                 :show-due="false"
+                sortable
+                :column-sort="columnSort"
+                :filterable="FILTERABLE"
                 :scroll-key="`all-tasks:${JSON.stringify(filters)}`"
+                @sort="sortByColumn"
+                @filter="filterByCell"
                 @open="openTask"
                 @status="(task, status) => controller.setStatus(task, status, true)"
                 @select="controller.select"

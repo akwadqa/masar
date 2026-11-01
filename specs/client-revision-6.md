@@ -17,8 +17,8 @@ Decisions recorded here are final (CLAUDE.md, "Client decisions are final once g
 
 ## Group 2: task list views (branch `feat/task-list-views`, PR)
 
-- **Saved filters**: per list (All Tasks, each Space's list), in this browser (`localStorage`). An explicit link with filters wins over the saved state; "Clear filters" clears the saved state.
-- **Header sorting**: Task, Status and Space sort A to Z, Priority Highest to Lowest; a second click reverses. Sorted in the browser over the loaded list (up to 5000 rows).
+- **Saved filters**: per list (All Tasks, each Space's list), in this browser (`localStorage`, key `masar:task-filters:all` or `masar:task-filters:space:<Space>`). Saved are the filter, sort and grouping parameters of the URL (`useTaskFilters.FILTER_KEYS`), not the open task panel. A link that carries filters wins and becomes the saved state; "Clear filters" is saved too. My Day keeps no saved filters.
+- **Header sorting**: Task, Status and Space sort A to Z, Priority Highest to Lowest, Last modified newest first; a second click reverses. Sorted in the browser over the loaded list (up to 5000 rows); ties keep the server order. Kept in the URL as `order` and `dir` (so it is saved with the filters); choosing a sort in the Sort menu removes the header sort.
 - **Click to filter**: clicking a Space or Priority cell toggles an "is" filter on that value, like Frappe Desk. Not for Status: its cell keeps changing the status (decision 2026-11-01).
 - **Last modified column**: relative time ("just now", "5 minutes ago", ...), from the Task's own last edit. Comments, time logs, Action changes and the automatic Overdue switch do not count (decision 2026-11-01).
 

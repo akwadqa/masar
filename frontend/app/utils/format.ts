@@ -94,6 +94,23 @@ export function formatRelative(value: string, now = new Date()): string {
   return formatDueDate(day, businessToday(now))
 }
 
+/**
+ * Age of a timestamp in words at every distance, for the Task Lists' Last modified column (client
+ * revision 6, 2026-11-01): "just now", "5 minutes ago", "3 hours ago", "yesterday", "4 days ago",
+ * "2 weeks ago", "3 months ago", "1 year ago". Days are counted in business time.
+ */
+export function formatAgo(value: string, now = new Date()): string {
+  const seconds = Math.max(0, (now.getTime() - new Date(value).getTime()) / 1000)
+  const ago = (count: number, unit: string) => `${count} ${unit}${count === 1 ? '' : 's'} ago`
+  if (seconds < 86_400) return formatRelative(value, now)
+  const days = Math.round((parseDateOnly(businessToday(now)).getTime() - parseDateOnly(businessToday(new Date(value))).getTime()) / 86_400_000)
+  if (days <= 1) return 'yesterday'
+  if (days < 7) return ago(days, 'day')
+  if (days < 30) return ago(Math.floor(days / 7), 'week')
+  if (days < 365) return ago(Math.max(1, Math.floor(days / 30)), 'month')
+  return ago(Math.floor(days / 365), 'year')
+}
+
 /** Short age of a timestamp for notification lists: "now", "5m", "3h", "2d", then the date ("26 Oct"). */
 export function formatAge(value: string, now = new Date()): string {
   const seconds = Math.max(0, (now.getTime() - new Date(value).getTime()) / 1000)

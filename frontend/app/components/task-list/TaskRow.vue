@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type { TaskListRow, TaskStatus } from '~/types/api'
-import { formatDueDate } from '~/utils/format'
+import type { TaskFilterField, TaskListRow, TaskStatus } from '~/types/api'
+import { formatAgo, formatDateTime, formatDueDate } from '~/utils/format'
 import { TASK_GRID, TASK_GRID_NO_DUE } from '~/utils/taskGrid'
 
 const props = defineProps<{
@@ -14,6 +14,10 @@ const props = defineProps<{
   striped?: boolean
   /** All Tasks hides the due column (client revision 2). */
   showDue?: boolean
+  /** Cells that filter the list by their value when clicked (client revision 6). */
+  filterable?: TaskFilterField[]
+  /** The list's clock for the Last modified time. */
+  now?: Date
 }>()
 const emit = defineEmits<{
   open: []
@@ -22,10 +26,19 @@ const emit = defineEmits<{
   select: [range: boolean]
   expand: []
   attribute: [field: 'isImportant' | 'isMyDay']
+  filter: [field: TaskFilterField, value: string]
 }>()
 
 const space = useSpaceLookup()(props.task.space)
 const spaceTitle = computed(() => props.task.spaceTitle || space?.title || '')
+const canFilter = (field: TaskFilterField) => !!props.filterable?.includes(field)
+// A filtering cell handles its own click; otherwise the click opens the task like the rest of the row.
+function filterBy(event: MouseEvent, field: TaskFilterField, value: string) {
+  if (!canFilter(field)) return
+  event.stopPropagation()
+  emit('filter', field, value)
+}
+const filterCell = 'rounded-sm outline-none hover:underline focus-visible:ring-2 focus-visible:ring-primary'
 const overdue = computed(() => props.task.status === 'Overdue')
 const editable = computed(() => props.canEdit !== false)
 const revealOnHover = 'opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 pointer-coarse:opacity-100'
@@ -123,16 +136,36 @@ const rowSurface = computed(() => {
     </span>
 
     <span class="hidden min-w-0 @lg:flex"><TaskStatusMenu :status="task.status" :title="task.title" :editable="editable" @change="(status) => emit('status', status)" /></span>
-    <span class="hidden min-w-0 items-center gap-1.5 text-xs text-muted @4xl:flex">
+    <!-- Space and Priority filter the list when clicked (client revision 6, like Frappe Desk). -->
+    <component
+      :is="canFilter('space') ? 'button' : 'span'"
+      :type="canFilter('space') ? 'button' : undefined"
+      :tabindex="canFilter('space') ? -1 : undefined"
+      class="hidden min-w-0 items-center gap-1.5 text-start text-xs text-muted @4xl:flex"
+      :class="canFilter('space') ? filterCell : ''"
+      :aria-label="canFilter('space') ? `Filter by Space ${spaceTitle}` : undefined"
+      @click="filterBy($event, 'space', task.space)"
+    >
       <SpaceIcon :space="space ?? { name: task.space }" size="xs" />
       <span class="truncate">{{ spaceTitle }}</span>
-    </span>
-    <span class="hidden @4xl:flex"><TaskPriority :priority="task.priority" /></span>
+    </component>
+    <component
+      :is="canFilter('priority') ? 'button' : 'span'"
+      :type="canFilter('priority') ? 'button' : undefined"
+      :tabindex="canFilter('priority') ? -1 : undefined"
+      class="hidden min-w-0 @4xl:flex"
+      :class="canFilter('priority') ? filterCell : ''"
+      :aria-label="canFilter('priority') ? `Filter by priority ${task.priority}` : undefined"
+      @click="filterBy($event, 'priority', task.priority)"
+    >
+      <TaskPriority :priority="task.priority" />
+    </component>
     <span v-if="showDue !== false" class="text-end text-xs tabular-nums" :class="overdue ? 'font-semibold text-overdue' : 'text-muted'">
       <template v-if="task.dueDate">
         <span v-if="overdue" class="sr-only">Overdue, due </span>{{ formatDueDate(task.dueDate) }}
       </template>
     </span>
+    <time class="hidden truncate text-end text-xs text-muted @2xl:block" :datetime="task.modified" :title="formatDateTime(task.modified)">{{ task.modified ? formatAgo(task.modified, now) : '' }}</time>
     <span class="hidden @2xl:block"><TaskPeople :assignees="task.assignees" :owner="task.taskOwner" :owner-ref="task.taskOwnerRef" /></span>
   </div>
 </template>

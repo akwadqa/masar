@@ -1,22 +1,23 @@
 // One column template for the Task List header and rows. Columns in order:
-// select · expand · title · status · space · priority · [due] · people. Narrower lists drop columns by
+// select · expand · title · status · space · priority · [due] · last modified · people. Narrower lists drop columns by
 // changing the template together with the cells. Breakpoints are container queries (`@lg`, `@2xl`, `@4xl`),
 // so a list inside a Batch box adapts to the box, not to the window.
-// All Tasks shows no due column (client revision 2), hence the second template.
+// All Tasks shows no due column (client revision 2), hence the second template. Last modified appears
+// with People (client revision 6, 2026-11-01).
 export const TASK_GRID = [
   'grid items-center gap-x-3',
   'grid-cols-[1.5rem_1.5rem_minmax(0,1fr)_4.5rem]',
   '@lg:grid-cols-[1.75rem_1.5rem_minmax(0,1fr)_9.75rem_4.75rem]',
-  '@2xl:grid-cols-[1.75rem_1.5rem_minmax(0,1fr)_9.75rem_4.75rem_5rem]',
-  '@4xl:grid-cols-[1.75rem_1.5rem_minmax(0,1fr)_9.75rem_minmax(0,10rem)_5.5rem_4.75rem_5rem]'
+  '@2xl:grid-cols-[1.75rem_1.5rem_minmax(0,1fr)_9.75rem_4.75rem_7rem_5rem]',
+  '@4xl:grid-cols-[1.75rem_1.5rem_minmax(0,1fr)_9.75rem_minmax(0,10rem)_5.5rem_4.75rem_7rem_5rem]'
 ].join(' ')
 
 export const TASK_GRID_NO_DUE = [
   'grid items-center gap-x-3',
   'grid-cols-[1.5rem_1.5rem_minmax(0,1fr)]',
   '@lg:grid-cols-[1.75rem_1.5rem_minmax(0,1fr)_9.75rem]',
-  '@2xl:grid-cols-[1.75rem_1.5rem_minmax(0,1fr)_9.75rem_5rem]',
-  '@4xl:grid-cols-[1.75rem_1.5rem_minmax(0,1fr)_9.75rem_minmax(0,10rem)_5.5rem_5rem]'
+  '@2xl:grid-cols-[1.75rem_1.5rem_minmax(0,1fr)_9.75rem_7rem_5rem]',
+  '@4xl:grid-cols-[1.75rem_1.5rem_minmax(0,1fr)_9.75rem_minmax(0,10rem)_5.5rem_7rem_5rem]'
 ].join(' ')
 
 /** Drag payload of task rows: a JSON array of Task names the user can already see. */

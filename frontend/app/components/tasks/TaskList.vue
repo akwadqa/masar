@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { useVirtualizer } from '@tanstack/vue-virtual'
-import { useMediaQuery } from '@vueuse/core'
+import { useMediaQuery, useNow } from '@vueuse/core'
 import { COMPOSER_SLOT, PAGE_SCROLL_QUERY } from '~/utils/pageScroll'
-import type { TaskAction, TaskListRow, TaskStatus } from '~/types/api'
+import type { TaskAction, TaskFilterField, TaskListRow, TaskStatus } from '~/types/api'
+import type { ColumnSort, TaskColumn } from '~/utils/taskSort'
 import type { TaskDraft } from '~/utils/drafts'
 import { buildTaskRows, nextFocusIndex, type ExpandedActions } from '~/utils/taskRows'
 import { setTaskDrag, TASK_GRID, TASK_GRID_NO_DUE } from '~/utils/taskGrid'
@@ -29,6 +30,11 @@ const props = defineProps<{
   /** Task pages (iPhone stabilization 2026-10-30): on phones (PAGE_SCROLL_QUERY) the list does not scroll
    *  by itself; it is part of the page, whose one scroll (the panel body) carries filters, rows and composer. */
   pageScroll?: boolean
+  /** Column headers sort the list (client revision 6); the list itself is sorted by the page. */
+  sortable?: boolean
+  columnSort?: ColumnSort | null
+  /** Cells that filter the list by their value when clicked (client revision 6). */
+  filterable?: TaskFilterField[]
 }>()
 const input = defineModel<string>('input', { default: '' })
 const emit = defineEmits<{
@@ -41,7 +47,11 @@ const emit = defineEmits<{
   expand: [task: TaskListRow]
   attribute: [task: TaskListRow, field: 'isImportant' | 'isMyDay']
   actionDone: [action: TaskAction, done: boolean]
+  sort: [column: TaskColumn]
+  filter: [field: TaskFilterField, value: string]
 }>()
+// One clock for every row's Last modified time.
+const now = useNow({ interval: 60_000 })
 
 // Collapsed Batch groups, by Batch name ('none' = tasks without a Batch). Kept per list.
 const collapsedGroups = ref<Set<string>>(new Set())
@@ -214,15 +224,15 @@ defineExpose({ focusCreate })
     <div
       class="h-10 shrink-0 border-b border-default bg-surface px-3 text-meta text-muted @2xl:px-5"
       :class="showDue === false ? TASK_GRID_NO_DUE : TASK_GRID"
-      aria-hidden="true"
     >
       <span /><span />
-      <span>Task</span>
-      <span class="hidden @lg:block">Status</span>
-      <span class="hidden @4xl:block">Space</span>
-      <span class="hidden @4xl:block">Priority</span>
-      <span v-if="showDue !== false" class="text-end">Due</span>
-      <span class="hidden text-end @2xl:block">People</span>
+      <TaskColumnHeader label="Task" column="title" :sort="columnSort" :sortable="sortable" @sort="emit('sort', $event)" />
+      <TaskColumnHeader label="Status" column="status" :sort="columnSort" :sortable="sortable" class="hidden @lg:flex" @sort="emit('sort', $event)" />
+      <TaskColumnHeader label="Space" column="space" :sort="columnSort" :sortable="sortable" class="hidden @4xl:flex" @sort="emit('sort', $event)" />
+      <TaskColumnHeader label="Priority" column="priority" :sort="columnSort" :sortable="sortable" class="hidden @4xl:flex" @sort="emit('sort', $event)" />
+      <TaskColumnHeader v-if="showDue !== false" label="Due" end />
+      <TaskColumnHeader label="Last modified" column="modified" :sort="columnSort" :sortable="sortable" end class="hidden @2xl:flex" @sort="emit('sort', $event)" />
+      <TaskColumnHeader label="People" end class="hidden @2xl:block" />
     </div>
     <div
       ref="scrollRef"
@@ -249,6 +259,8 @@ defineExpose({ focusCreate })
             :expanded="expanded[row.task.name] !== undefined"
             :striped="item.index % 2 === 1"
             :show-due="showDue"
+            :filterable="filterable"
+            :now="now"
             :draggable="draggableRows ? 'true' : undefined"
             @dragstart="(event: DragEvent) => startDrag(event, row.task)"
             @focus="focusedIndex = item.index"
@@ -257,6 +269,7 @@ defineExpose({ focusCreate })
             @select="(range) => emit('select', row.task, range)"
             @expand="emit('expand', row.task)"
             @attribute="(field) => emit('attribute', row.task, field)"
+            @filter="(field, value) => emit('filter', field, value)"
           />
 
           <div
