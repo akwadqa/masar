@@ -122,12 +122,12 @@ function onCardKeydown(event: KeyboardEvent, feature: Feature) {
 </script>
 
 <template>
-  <div class="flex h-full min-h-0 flex-col">
+  <div class="flex flex-col">
     <p class="sr-only" aria-live="polite">{{ announcement }}</p>
     <p v-if="canManage" class="hidden px-4 pt-3 text-xs text-muted sm:block">
       Drag cards between columns, or focus a card and use <UKbd value="alt" size="sm" /> + arrow keys. The card menu offers the same moves.
     </p>
-    <div class="flex min-h-0 flex-1 snap-x snap-mandatory gap-3 overflow-x-auto p-3 sm:p-4" role="region" aria-label="Roadmap">
+    <div class="flex flex-1 snap-x snap-mandatory gap-3 overflow-x-auto p-3 sm:p-4" role="region" aria-label="Roadmap">
       <section
         v-for="column in ROADMAP_COLUMNS"
         :key="column"
@@ -164,7 +164,7 @@ function onCardKeydown(event: KeyboardEvent, feature: Feature) {
           ghost-class="opacity-40"
           role="list"
           :aria-label="`${column} Features`"
-          class="flex min-h-24 flex-1 flex-col gap-2 overflow-y-auto p-2"
+          class="flex min-h-24 flex-1 flex-col gap-2 p-2"
           @end="onDragEnd"
         >
           <article
@@ -173,7 +173,7 @@ function onCardKeydown(event: KeyboardEvent, feature: Feature) {
             :data-feature="feature.name"
             role="listitem"
             tabindex="0"
-            class="group cursor-pointer overflow-hidden rounded-card border bg-default p-3 text-sm shadow-xs outline-none transition hover:-translate-y-px hover:shadow-md focus-visible:ring-2 focus-visible:ring-primary motion-reduce:hover:translate-y-0"
+            class="group shrink-0 cursor-pointer overflow-hidden rounded-card border bg-default p-3 text-sm shadow-xs outline-none transition hover:-translate-y-px hover:shadow-md focus-visible:ring-2 focus-visible:ring-primary motion-reduce:hover:translate-y-0"
             :class="[activeFeature === feature.name ? 'border-primary' : 'border-default', canManage ? 'active:cursor-grabbing' : '']"
             :aria-label="`${feature.title}, ${column}, ${feature.progress.total ? `${feature.progress.completed} of ${feature.progress.total} tasks completed` : 'no tasks'}`"
             @click="emit('open', feature)"

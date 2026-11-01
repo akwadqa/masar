@@ -32,7 +32,8 @@ function create(roadmap: RoadmapColumn = 'Later') {
 </script>
 
 <template>
-  <div class="flex h-full min-h-0 flex-col">
+  <!-- The board grows with its cards and the Space page scrolls; cards never shrink (client revision 6, R1). -->
+  <div class="flex flex-1 flex-col">
     <div class="flex items-center gap-2 border-b border-default px-3 py-2 sm:px-4">
       <UInput v-model="search" icon="i-lucide-search" placeholder="Search Features" size="sm" class="w-full sm:w-56" aria-label="Search Features" />
       <p class="hidden text-sm text-muted sm:block" aria-live="polite">
@@ -56,7 +57,7 @@ function create(roadmap: RoadmapColumn = 'Later') {
     </StatePanel>
     <RoadmapBoard
       v-else
-      class="min-h-0 flex-1"
+      class="flex-1"
       :space="space.name"
       :features="visible"
       :can-manage="canManage"
