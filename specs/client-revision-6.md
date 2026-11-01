@@ -1,0 +1,44 @@
+# Client revision 6 (2026-11-01)
+
+Requests from the client on 2026-11-01, the decisions taken the same day, and the delivery plan.
+Decisions recorded here are final (CLAUDE.md, "Client decisions are final once given").
+
+## Group 1: minor fixes (straight to `master`, one commit each)
+
+| # | Request | Cause / current behaviour | Change |
+|---|---|---|---|
+| R1 | Roadmap Kanban: cards get narrower and cropped when a column is full. | Cards are flex items with `overflow-hidden`, so they shrink to fit the fixed-height column (`RoadmapBoard.vue`). | Cards keep their height; the board grows and the page scrolls (client wording: "the page expands and scrolls to the bottom"). |
+| R2 | The latest comment disappears after opening a Task from an e-mail; it is back after a reload. | An anchored load (`?comment=`) shows the comment and newer items; the 20 s poll then appended the older items of the newest page after it, so newest-first display moved the comment to the bottom (`useCollaboration.ts`, `refreshNewest`). | Fixed together with R3: the whole timeline is loaded, the poll only adds items newer than the last known one, in server order. |
+| R3 | Do not hide older comments behind "Show earlier activity". | Timeline pages of 30 with before/after/anchor cursors (ADR-057). | The timeline loads every item of the chosen view (pages are fetched until the end). A deep link scrolls to and highlights the comment. Supersedes ADR-057's windowing. |
+| R4 | The timeline opens on "All". | Opened on Comments (client revision 5, R14). | Default view "All", also for e-mail deep links. |
+| R5 | 12-hour clock. | `formatTime` was 24-hour (`en-GB`); `formatDateTime` already 12-hour. | `formatTime` gives e.g. "2:05 PM". |
+| R6 | Mobile: choosing a filter field freezes the page. | The modal "+ Filter" menu locks the body (pointer events, scroll, iOS touchmove) and the values picker opens while it is still closing; on iOS the lock can stay. | Non-modal filter menus; the values picker opens after the menu has closed. Needs confirmation on a phone. |
+| R7 | Task lists show active Tasks by default again. | Since 8f0c589 (2026-10-31) the lists showed all Tasks. | Default = active (Open, Working, Pending Review, Changes Required, Overdue). Choosing a Status filter shows any status. Reverses the 2026-10-31 decision. |
+
+## Group 2: task list views (branch `feat/task-list-views`, PR)
+
+- **Saved filters**: per list (All Tasks, each Space's list), in this browser (`localStorage`). An explicit link with filters wins over the saved state; "Clear filters" clears the saved state.
+- **Header sorting**: Task, Status and Space sort A to Z, Priority Highest to Lowest; a second click reverses. Sorted in the browser over the loaded list (up to 5000 rows).
+- **Click to filter**: clicking a Space or Priority cell toggles an "is" filter on that value, like Frappe Desk. Not for Status: its cell keeps changing the status (decision 2026-11-01).
+- **Last modified column**: relative time ("just now", "5 minutes ago", ...), from the Task's own last edit. Comments, time logs, Action changes and the automatic Overdue switch do not count (decision 2026-11-01).
+
+## Group 3: notification rules (branch `feat/notification-rules`, PR)
+
+Rules (client, 2026-11-01):
+
+1. Nobody is notified of their own activity (also no e-mail to the comment author; reverses ADR-056 / Q-P6-1).
+2. Task owner, assignees and mentioned users: e-mail + push + in-app.
+3. All other Space members: push + in-app, no e-mail.
+4. Activities that notify (decision 2026-11-01, "key events"): new comments, status changes, assignment, task owner changes, Overdue.
+5. Reactions to a comment: push + in-app to the comment's author only, no e-mail (decision 2026-11-01).
+6. Bulk status changes: one summary notification per recipient (e-mail tier: one e-mail), not one per Task (decision 2026-11-01).
+
+The user's e-mail switch keeps muting e-mail. Docs (ADR-056, ADR-064, docs/01, docs/04 §6-7, docs/08 AS-15) and tests are updated with the change.
+
+## Not changed
+
+- Batch planning permissions (Managers only, ADR-043): the client asked to leave this as it is (2026-11-01).
+
+## Verification limits
+
+There is no test site: backend tests and E2E specs cannot run. Frontend typecheck, unit tests, `build:app` and `check:app` run locally; behaviour is checked by the client on production.
