@@ -51,7 +51,9 @@ describe('timer and activity formatting', () => {
     expect(formatDayHeading('2026-10-27T22:30:00Z', now)).toBe('Today')
     expect(formatDayHeading('2026-10-27T08:00:00Z', now)).toBe('Yesterday')
     expect(formatDayHeading('2026-10-20T08:00:00Z', now)).toBe('Tue, 20 Oct 2026')
-    expect(formatTime('2026-10-28T11:05:00Z')).toBe('14:05')
+    // 12-hour clock (client revision 6, R5). ICU may join the time and AM/PM with a narrow no-break space.
+    expect(formatTime('2026-10-28T11:05:00Z')).toMatch(/^2:05\sPM$/)
+    expect(formatTime('2026-10-27T21:30:00Z')).toMatch(/^12:30\sAM$/)
   })
 })
 

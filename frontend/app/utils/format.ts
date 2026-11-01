@@ -43,10 +43,10 @@ export function isOverdue(value: string | null, today = businessToday()): boolea
   return !!value && value < today
 }
 
-/** Format an ISO timestamp (with offset) in business time, e.g. "Oct 28, 2026, 2:05 AM". */
+/** Format an ISO timestamp (with offset) in business time, 12-hour, e.g. "Oct 28, 2026, 2:05 AM" (client revision 6, R5). */
 export function formatDateTime(value: string | null): string {
   if (!value) return ''
-  return new Intl.DateTimeFormat('en', { timeZone: businessTimeZone, dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value))
+  return new Intl.DateTimeFormat('en', { timeZone: businessTimeZone, dateStyle: 'medium', timeStyle: 'short', hourCycle: 'h12' }).format(new Date(value))
 }
 
 /** Plain text ⇄ the sanitised HTML stored by the server (rich text arrives in Phase 6). */
@@ -62,10 +62,10 @@ export function htmlToText(html: string | null): string {
   return (doc.body.textContent ?? '').trim()
 }
 
-/** Clock time of a timestamp in the business timezone (24-hour, "14:05"). */
+/** Clock time of a timestamp in the business timezone, 12-hour ("2:05 PM"; client revision 6, R5, 2026-11-01). */
 export function formatTime(value: string | null): string {
   if (!value) return ''
-  return new Intl.DateTimeFormat('en-GB', { timeZone: businessTimeZone, hour: '2-digit', minute: '2-digit' }).format(new Date(value))
+  return new Intl.DateTimeFormat('en', { timeZone: businessTimeZone, hour: 'numeric', minute: '2-digit', hourCycle: 'h12' }).format(new Date(value))
 }
 
 /** Day heading of a timestamp for activity groups: "Today", "Yesterday" or "Mon, 26 Oct 2026". */
