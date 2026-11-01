@@ -25,6 +25,8 @@ Tasks). The client asked for a field / operator / value filter that stays simple
    `sort_order` values of different Spaces cannot be compared, and Task rows cannot be reordered by
    hand anyway. The backend keeps the `manual` sort for Batch boxes (`useBatches`), which still use
    it. Old links with `sort=manual` fall back to Recently updated.
+   Client revision 6 (2026-11-01) adds column header sorting on top of these server sorts; see
+   `specs/client-revision-6.md`.
 7. Spaces page gets a sort: **Name** (A–Z, today's order and the default) and **Creation date**
    (newest first).
 8. The E2E specs are updated to the new controls.

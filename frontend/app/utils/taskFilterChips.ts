@@ -125,3 +125,16 @@ export function chipsAdmitNewTask(filters: Partial<TaskListFilters>): boolean {
   return admits('status', 'Open') && admits('priority', 'Medium') && admits('assignee', null)
     && admits('label', null) && !chipIsActive(filters, 'owner')
 }
+
+/**
+ * Clicking a Space or Priority cell in a Task List (client revision 6, 2026-11-01, like Frappe Desk):
+ * filter by that value; clicking a value the chip already shows ("is") removes it again. Any other
+ * state of the chip (other values, "is not") is replaced by "is <value>". Labels, Features and Versions
+ * belong to one Space, so a Space change clears them, as the Space chip does.
+ */
+export function toggleChipValue(filters: Partial<TaskListFilters>, field: TaskFilterField, value: string) {
+  const current = chipValues(filters, field)
+  const showing = operatorOf(filters, field) === 'is' && current.includes(value)
+  const scoped = field === 'space' ? { label: null, label_op: null, feature: null, release: null } : {}
+  return { ...chipQuery(field, 'is', showing ? current.filter(v => v !== value) : [value]), ...scoped }
+}

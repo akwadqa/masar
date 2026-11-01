@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import type { SpaceDetail, TaskListRow, TaskSort } from '~/types/api'
+import type { SpaceDetail, TaskFilterField, TaskListRow, TaskSort } from '~/types/api'
 import { useMediaQuery } from '@vueuse/core'
 import type { FilterPanelKind } from '~/composables/workspace/useFilterPanel'
 import { COMPOSER_SLOT } from '~/utils/pageScroll'
+import { toggleChipValue } from '~/utils/taskFilterChips'
+import { sortTasks } from '~/utils/taskSort'
 
 const props = defineProps<{ space: SpaceDetail }>()
 
@@ -11,9 +13,19 @@ const route = useRoute()
 // shows any status (client revision 6, R7, 2026-11-01; reverses the Oct 2026 "all Tasks" default).
 // Recently updated or Creation date; manual order was dropped (client decision 2026-10-31).
 const SORTS: TaskSort[] = ['recently_updated', 'created']
-const { filters, setQuery, activeCount, clearFilters } = useTaskFilters({ sort: 'recently_updated' }, SORTS)
+// Each Space's list remembers its filters in this browser; header sorting and clicking a Priority cell
+// work as in Frappe Desk (client revision 6, 2026-11-01). Every row is in this Space, so the Space cell
+// does not filter.
+const { filters, columnSort, setQuery, sortByColumn, activeCount, clearFilters } = useTaskFilters(
+  { sort: 'recently_updated' }, SORTS, { storageKey: () => `space:${props.space.name}` }
+)
 
-const { data: tasks, status, error, refresh } = useTaskList(() => props.space.name, filters)
+const { data: listed, status, error, refresh } = useTaskList(() => props.space.name, filters)
+const tasks = computed(() => listed.value && sortTasks(listed.value, columnSort.value))
+const FILTERABLE: TaskFilterField[] = ['priority']
+function filterByCell(field: TaskFilterField, value: string) {
+  setQuery(toggleChipValue(filters.value, field, value))
+}
 const { data: labels } = useSpaceLabels(() => props.space.name)
 const { data: features } = useFeatures(() => props.space.name)
 const { data: releases } = useReleases(() => props.space.name)
@@ -179,6 +191,11 @@ watch(() => openPanels.value.join(), () => {
           :selected="controller.selected.value"
           :expanded="controller.expanded.value"
           :scroll-key="`space:${space.name}:${JSON.stringify(filters)}`"
+          sortable
+          :column-sort="columnSort"
+          :filterable="FILTERABLE"
+          @sort="sortByColumn"
+          @filter="filterByCell"
           @open="openTask"
           @status="(task, status) => controller.setStatus(task, status, canEdit)"
           @select="controller.select"
