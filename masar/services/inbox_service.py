@@ -1,10 +1,18 @@
 """The notification list behind the bell (client revision 5), with e-mail and push delivery.
 
 Where notifications come from:
-- Task and Space history (`record_activity`): every path that assigns, changes an owner, marks a Task
-  Overdue, adds a member, changes a role or transfers a Space already writes one history entry, so the
-  notification is derived from that entry in the same transaction (`from_activity`).
-- Comments (`for_comment`): mentioned people, and the Task's assignees and owner.
+- Task and Space history (`record_activity`): every path that assigns, changes an owner or a status,
+  marks a Task Overdue, adds a member, changes a role or transfers a Space already writes one history
+  entry, so the notification is derived from that entry in the same transaction (`from_activity`).
+- Comments (`for_comment`) and reactions (`for_reaction`).
+
+Who hears about what (client revision 6, 2026-11-01/02; specs/client-revision-6.md):
+- New comment: mentioned people, the Task's owner and assignees (who also get the e-mail, sent by
+  notification_service), and every other member of the Space (bell and push only).
+- Status change: the Task's owner and assignees. A bulk change sends one summary per person.
+- Assignment: the new assignee. Owner change: the new owner. Overdue: the owner and the assignees.
+- Reaction: the comment's author only, without e-mail.
+- Space events: the person concerned.
 
 Delivery:
 - The list entry is written in the caller's transaction, so it exists exactly when the change does.
@@ -36,8 +44,13 @@ COMMENT = "Comment"
 SPACE_MEMBER = "Space Member"
 SPACE_ROLE = "Space Role"
 SPACE_OWNER = "Space Owner"
-# Comment and mention e-mails are sent by notification_service (ADR-056).
-EMAILED_BY_COMMENT_PIPELINE = {MENTION, COMMENT}
+STATUS = "Status"
+REACTION = "Reaction"
+# Comment and mention e-mails are sent by notification_service (ADR-056); reactions are never e-mailed
+# (client revision 6).
+NOT_EMAILED_HERE = {MENTION, COMMENT, REACTION}
+# Shown in subjects (stored keys, rendered as emoji by the Workspace; comment_service.REACTIONS).
+REACTION_EMOJI = {"thumbs_up": "👍", "heart": "❤️", "tada": "🎉", "smile": "😄", "eyes": "👀", "check": "✅"}
 PAGE_SIZE = 30
 EMAIL_PREFERENCE = "masar_email_notifications"
 
@@ -119,7 +132,7 @@ def _notify(
 					"link": link,
 				}
 			).insert(ignore_permissions=True)
-			if kind not in EMAILED_BY_COMMENT_PIPELINE:
+			if kind not in NOT_EMAILED_HERE:
 				row.db_set("email_status", _send_email(row, recipient, email), update_modified=False)
 		state["push"].add(recipient)
 
@@ -185,6 +198,26 @@ def email_args(
 	}
 
 
+def _current_members(space: str | None) -> set[str]:
+	from masar.services.comment_service import space_members  # comment_service imports this module
+
+	return space_members(space) if space else set()
+
+
+def owner_and_assignees(task: str) -> list[str]:
+	"""The people a Task's status concerns: its owner and its assignees, as stored now, who are still
+	current, enabled members of its Space. Masar keeps the owner when they leave the Space (I-TASK-2),
+	so without this check a former member would get e-mail about the Task."""
+	row = frappe.db.get_value("Masar Task", task, ["task_owner", "space"], as_dict=True)
+	if not row:
+		return []
+	assignees = frappe.get_all(  # Masar's own lookup for notifications, after the change was authorised
+		"Masar Task Assignee", filters={"parent": task, "parenttype": "Masar Task"}, pluck="user"
+	)
+	members = _current_members(row.space)
+	return [user for user in {*assignees, row.task_owner} if user and user in members]
+
+
 def from_activity(doctype: str, name: str, space: str | None, event: str, data: dict):
 	"""Called by record_activity for every history entry; most events notify nobody."""
 	actor = frappe.session.user
@@ -194,10 +227,14 @@ def from_activity(doctype: str, name: str, space: str | None, event: str, data: 
 		elif event == "owner_changed" and data.get("to"):
 			_task_notification(TASK_OWNER, [data["to"]], name, space, actor)
 		elif event == "field_changed" and data.get("field") == "status" and data.get("to") == "Overdue":
-			assignees = frappe.get_all(  # system job: the Task's own assignees
-				"Masar Task Assignee", filters={"parent": name, "parenttype": "Masar Task"}, pluck="user"
-			)
-			_task_notification(OVERDUE, assignees, name, space, actor)
+			_task_notification(OVERDUE, owner_and_assignees(name), name, space, actor)
+		elif event == "field_changed" and data.get("field") == "status" and data.get("to"):
+			change = {"task": name, "space": space, "from": data.get("from"), "to": data["to"]}
+			collected = getattr(frappe.local, "masar_status_changes", None)
+			if collected is not None:
+				collected.append(change)  # a bulk change: one summary per person when it ends
+			else:
+				_status_notification(change, owner_and_assignees(name), actor)
 	elif doctype == "Masar Space":
 		if event == "member_added":
 			_space_notification(SPACE_MEMBER, data.get("user"), name, actor, role=data.get("role"))
@@ -252,6 +289,93 @@ def _task_notification(kind: str, recipients: list, task: str, space: str | None
 		detail=meta or None,
 		link=f"/tasks/{task}",
 		email=email,
+		actor=actor,
+	)
+
+
+def _status_notification(change: dict, recipients: list, actor: str):
+	task, space = change["task"], change["space"]
+	task_title, space_title = _titles(task, space)
+	if not task_title:
+		return
+	who = _name(actor)
+	old, new = _(change["from"] or "Open"), _(change["to"])
+	_notify(
+		recipients,
+		STATUS,
+		space=space,
+		task=task,
+		subject=_("{0} changed “{1}” to {2}").format(who, task_title, new),
+		detail=_("{0} → {1}").format(old, new),
+		link=f"/tasks/{task}",
+		email={
+			"heading": _("Task status changed"),
+			"intro": _("{0} changed the status of a task in {1} from {2} to {3}.").format(
+				who, space_title, old, new
+			),
+			"reason": _("You receive this because you own or are assigned to this task."),
+			"cta": _("Open task"),
+			"context": {"label": _("Task"), "title": task_title, "meta": space_title},
+		},
+		actor=actor,
+	)
+
+
+class collect_status_changes:
+	"""Bulk edits (task_service.bulk_update): status changes made inside are collected and, when the
+	block ends without an error, each person concerned gets one notification: the usual one when only
+	one of their Tasks changed, otherwise a summary (client revision 6, 2026-11-01)."""
+
+	def __enter__(self):
+		self.outer = getattr(frappe.local, "masar_status_changes", None)
+		frappe.local.masar_status_changes = [] if self.outer is None else self.outer
+		return self
+
+	def __exit__(self, error_type, error, traceback):
+		changes = frappe.local.masar_status_changes
+		frappe.local.masar_status_changes = self.outer
+		if error_type is None and self.outer is None and changes:
+			_notify_status_changes(changes, frappe.session.user)
+		return False
+
+
+def _notify_status_changes(changes: list[dict], actor: str):
+	by_person: dict[str, list[dict]] = {}
+	for change in changes:
+		for person in set(owner_and_assignees(change["task"])):
+			by_person.setdefault(person, []).append(change)
+	for person, own in sorted(by_person.items()):
+		if len(own) == 1:
+			_status_notification(own[0], [person], actor)
+		else:
+			_status_summary(person, own, actor)
+
+
+def _status_summary(person: str, changes: list[dict], actor: str):
+	who = _name(actor)
+	count = len(changes)
+	spaces = {c["space"] for c in changes}
+	space = spaces.pop() if len(spaces) == 1 else None
+	lines = [
+		_("{0}: {1}").format(frappe.db.get_value("Masar Task", c["task"], "title") or c["task"], _(c["to"]))
+		for c in changes
+	]
+	shown = "; ".join(lines[:10]) + ("; …" if count > 10 else "")
+	_notify(
+		[person],
+		STATUS,
+		space=space,
+		task=None,
+		subject=_("{0} changed the status of {1} tasks").format(who, count),
+		detail=shown[:500],
+		link=f"/spaces/{space}/tasks" if space else "/tasks",
+		email={
+			"heading": _("Task statuses changed"),
+			"intro": _("{0} changed the status of {1} tasks you own or are assigned to.").format(who, count),
+			"reason": _("You receive this because you own or are assigned to these tasks."),
+			"cta": _("Open tasks"),
+			"quote": shown,
+		},
 		actor=actor,
 	)
 
@@ -315,7 +439,8 @@ def _space_notification(kind: str, recipient: str | None, space: str, actor: str
 
 
 def for_comment(task, comment: str, mentioned: list[str], excerpt: str):
-	"""A new comment: mentioned members, then the Task's assignees and owner (never the author)."""
+	"""A new comment: mentioned members, the Task's assignees and owner, then every other member of the
+	Space (client revision 6). Never the author. The e-mails are sent by notification_service."""
 	who = _name(frappe.session.user)
 	link = f"/tasks/{task.name}?comment={comment}"
 	short = (excerpt[:200] + "…") if len(excerpt) > 200 else excerpt
@@ -330,9 +455,10 @@ def for_comment(task, comment: str, mentioned: list[str], excerpt: str):
 		link=link,
 		email=email,
 	)
-	followers = {row.user for row in task.assignees} | ({task.task_owner} if task.task_owner else set())
+	# Everyone else in the Space: the Task's owner and assignees also get the e-mail (notification_service),
+	# the other members only this entry and its push.
 	_notify(
-		followers - set(mentioned),
+		_current_members(task.space) - set(mentioned),
 		COMMENT,
 		space=task.space,
 		task=task.name,
@@ -340,6 +466,26 @@ def for_comment(task, comment: str, mentioned: list[str], excerpt: str):
 		detail=short,
 		link=link,
 		email=email,
+	)
+
+
+def for_reaction(comment, emoji: str):
+	"""A reaction to a comment: its author only, bell and push without e-mail (client revision 6)."""
+	task_title = frappe.db.get_value("Masar Task", comment.task, "title")
+	if not task_title or comment.author not in _current_members(comment.space):
+		return
+	who = _name(frappe.session.user)
+	_notify(
+		[comment.author],
+		REACTION,
+		space=comment.space,
+		task=comment.task,
+		subject=_("{0} reacted {1} to your comment on “{2}”").format(
+			who, REACTION_EMOJI.get(emoji, ""), task_title
+		),
+		detail=None,
+		link=f"/tasks/{comment.task}?comment={comment.name}",
+		email={},
 	)
 
 

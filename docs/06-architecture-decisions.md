@@ -705,9 +705,8 @@ The gateway sends `Cache-Control: private, no-store` for private files, replacin
 - The content is the author, Task title, a 280-character text preview and a direct comment link. There are no attachments and no Space details.
 
 **Recipient scope.**
-- **Implemented:** every current member, including the author, per the Phase 6 directive.
-- **Conflicts with:** the Phase 0 catalogue (MASAR-COLLAB-004 said "except the author").
-- **Status:** recorded as decision Q-P6-1.
+- **Implemented until 2026-11-01:** every current member, including the author, per the Phase 6 directive (decision Q-P6-1).
+- **Client revision 6 (2026-11-01), current:** the e-mail goes to the Task's owner and assignees and the mentioned members, never to the author. The other members of the Space receive the comment in the bell and as a push only (ADR-064). Recipients are still rebuilt at delivery time. See `specs/client-revision-6.md`.
 
 **Delivery status.**
 - **Development:** Mailpit receives one message per recipient (verified).
@@ -860,6 +859,7 @@ Rolling back after an additive migration leaves the new table and column unused;
 **Decision.**
 - **Source:** every one of these changes already writes one history entry (`record_activity`) on every path (single and bulk edits, removal of a member, the Overdue job). `inbox_service.from_activity` turns those entries into `Masar Notification` rows in the same transaction, so a notification exists exactly when its change does. Comments and mentions come from `comment_service.create`.
 - **Personal records:** a notification is readable only by its recipient and written only by services. Entries about a Space disappear from the list once the person leaves that Space. Nobody is notified of their own change. Assigning someone to a Task without assignees also makes them the owner, but produces one entry, not two.
+- **Recipients since client revision 6 (2026-11-01/02, `specs/client-revision-6.md`):** a new comment reaches the mentioned members and the Task's owner and assignees (bell, push, e-mail) and every other Space member (bell and push only); a status change reaches the owner and assignees (kind `Status`; a bulk edit sends one summary per person); Overdue reaches the owner and the assignees; a reaction reaches the comment's author only (kind `Reaction`, no e-mail). Assignment and owner changes still notify only the person concerned.
 - **E-mail:** sent through Frappe's Email Queue with one template (`templates/emails/masar_notification.html`; Frappe renders e-mail templates without autoescaping, so every value is escaped in the template). Comment and mention e-mails keep the ADR-056 pipeline, which now uses the same template. Each person can turn Masar e-mails off (`emailNotifications` preference); the list is kept either way.
 - **Push:** Web Push with no payload, signed with a per-site VAPID key (`cryptography`, already a Frappe dependency; no new package). A push only wakes the service worker, which reads the newest unread entries with the person's own session. No notification text passes through browser vendors' push services, and nothing stale or no longer permitted is shown. Endpoints must belong to the browser vendors' push services; gone endpoints are removed.
 - **Service worker:** `/masar/sw.js` (served by `masar.pwa.ServiceWorkerPage`, `hooks.page_renderer`), push only. It caches nothing and handles no fetches: offline use was explicitly declined by the owner.

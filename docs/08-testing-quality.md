@@ -131,11 +131,11 @@ When two users move T to different Batches concurrently, Then T ends in exactly 
 Given a private image pasted into a comment on Task T in Space A,
 When a Space B-only user requests its `/private/files/...` URL, Then the response is 403 and no bytes are returned.
 
-**AS-15 Comment notifications**
-Given Space A has members Lina, Omar, Sara and Omar is mentioned,
+**AS-15 Comment notifications** (client revision 6, 2026-11-01)
+Given Space A has members Lina, Omar, Sara and Ali, Sara owns the Task and Omar is mentioned,
 When Lina posts a comment,
-Then Omar receives one "mentioned you" email, Sara one comment email, Lina none;
-And if Sara is removed from Space A before the job runs, Sara receives nothing.
+Then Omar receives one "mentioned you" email, Sara one comment email, Ali a bell entry and a push but no email, Lina nothing;
+And if Sara is removed from Space A before the job runs, Sara receives no email.
 
 **AS-16 Worklog**
 Given Task T with remaining 4h,

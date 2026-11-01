@@ -16,7 +16,10 @@ const KINDS: Record<NotificationKind, { icon: string, tone: string }> = {
   'Comment': { icon: 'i-lucide-message-square', tone: 'text-toned bg-elevated' },
   'Space Member': { icon: 'i-lucide-users', tone: 'text-success bg-success/10' },
   'Space Role': { icon: 'i-lucide-shield', tone: 'text-toned bg-elevated' },
-  'Space Owner': { icon: 'i-lucide-crown', tone: 'text-warning bg-warning/10' }
+  'Space Owner': { icon: 'i-lucide-crown', tone: 'text-warning bg-warning/10' },
+  // Client revision 6: status changes (to the owner and assignees) and reactions (to the comment's author).
+  'Status': { icon: 'i-lucide-circle-dot', tone: 'text-primary bg-primary/10' },
+  'Reaction': { icon: 'i-lucide-smile-plus', tone: 'text-toned bg-elevated' }
 }
 
 const router = useRouter()

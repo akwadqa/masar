@@ -7,9 +7,11 @@ States, kept apart on purpose:
 3. Delivery attempted — the Email Queue entry is sent immediately after the recipient is re-checked.
 4. Sent / Failed — recorded per recipient (Failed keeps the error, e.g. no outgoing e-mail account).
 
-Recipients (requirement: everyone with access to the Task's Space) are rebuilt at delivery time from
-current membership, so a member removed in between receives nothing. Mentioned members get the
-"mentioned you" message instead of the general one — never both.
+Recipients (client revision 6, 2026-11-01; reverses ADR-056's "every member, including the author"):
+the Task's owner and assignees and the mentioned members, never the author. Other members of the Space
+get the comment in their bell and as a push only (inbox_service.for_comment). Recipients are rebuilt at
+delivery time from the Task and current membership, so a member removed in between receives nothing.
+Mentioned members get the "mentioned you" message instead of the general one — never both.
 """
 
 import json
@@ -19,7 +21,7 @@ from frappe import _
 from frappe.utils import now_datetime
 
 from masar.services.comment_service import preview, space_members
-from masar.services.inbox_service import email_args, emails_enabled
+from masar.services.inbox_service import email_args, emails_enabled, owner_and_assignees
 from masar.utils.context import masar_service
 
 
@@ -41,8 +43,9 @@ def notify_comment(comment: str, commit: bool = True):
 		return {"skipped": "task deleted before delivery"}
 	author = frappe.db.get_value("User", doc.author, "full_name") or doc.author
 	mentioned = set(json.loads(doc.mentions or "[]"))
+	recipients = (set(owner_and_assignees(doc.task)) | mentioned) & (space_members(doc.space) - {doc.author})
 	results = {"Queued": 0, "Sent": 0, "Failed": 0, "Skipped": 0}
-	for recipient in sorted(space_members(doc.space)):
+	for recipient in sorted(recipients):
 		results[_deliver(doc, recipient, recipient in mentioned, task_title, author, commit)] += 1
 	return results
 
@@ -95,7 +98,9 @@ def _deliver(doc, recipient: str, mentioned: bool, task_title: str, author: str,
 		context={"label": _("Task"), "title": task_title, "meta": space_title},
 		quote=preview(doc),
 		cta=_("Reply in Masar"),
-		reason=_("You receive this because you are a member of the task's Space."),
+		reason=_("You receive this because you were mentioned in it.")
+		if mentioned
+		else _("You receive this because you own or are assigned to this task."),
 	)
 	try:
 		# Build the Email Queue entry without Frappe's deferred "send after commit", then send it here,

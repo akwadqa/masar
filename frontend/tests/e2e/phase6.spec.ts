@@ -225,7 +225,7 @@ test('I, J, P: outsiders cannot read, write or download anything', async ({ brow
   await anonymous.context().close()
 })
 
-test('12: one notification per member, verified in the isolated mail sink', async ({ browser }) => {
+test('12: one e-mail per recipient, never to the author (client revision 6), verified in the isolated mail sink', async ({ browser }) => {
   const mailpit = process.env.E2E_MAILPIT_URL
   test.skip(!mailpit, 'No mail sink configured for this environment (external SMTP pending).')
   const manager = await asUser(browser, USERS.manager)
@@ -251,7 +251,7 @@ test('12: one notification per member, verified in the isolated mail sink', asyn
     latest.set(m.To[0]!.Address, m.Subject)
   }
   expect(latest.get(USERS.member)).toContain('mentioned you')
-  expect(latest.get(USERS.manager)).toContain('commented on')
+  expect(latest.has(USERS.manager)).toBe(false) // the author (client revision 6)
   expect(latest.has(USERS.outsider)).toBe(false)
   expect(latest.has(USERS.spare)).toBe(false) // removed in scenario 10
 })
