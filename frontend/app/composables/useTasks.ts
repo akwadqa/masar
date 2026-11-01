@@ -64,7 +64,7 @@ export function parseListKey(key: string): TaskListFilters | null {
 
 export function toQuery(f: TaskListFilters) {
   return {
-    // Chosen statuses are exact; without a choice `completed` decides (the Task lists show all).
+    // Chosen statuses are exact; without a choice `completed` decides (the Task lists show active Tasks).
     completed: chipIsActive(f, 'status') ? 'all' : f.completed,
     // Status, owner, assignee, priority and label chips with their operators.
     ...chipApiQuery(f),

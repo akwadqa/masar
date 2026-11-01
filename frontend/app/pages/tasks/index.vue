@@ -8,9 +8,10 @@ import type { TaskListRow, TaskSort } from '~/types/api'
 // the label filter appears once a single Space is chosen. The selection survives filter changes.
 useHead({ title: 'All Tasks · Masar' })
 const route = useRoute()
-// Every Task by default, completed included (client request, Oct 2026); the Status filter narrows it.
+// Active Tasks by default (Open, Working, Pending Review, Changes Required, Overdue); choosing a Status
+// shows any status (client revision 6, R7, 2026-11-01; reverses the Oct 2026 "all Tasks" default).
 const SORTS: TaskSort[] = ['recently_updated', 'created']
-const { filters, setQuery, activeCount, clearFilters } = useTaskFilters({ sort: 'recently_updated', completed: 'all' }, SORTS)
+const { filters, setQuery, activeCount, clearFilters } = useTaskFilters({ sort: 'recently_updated' }, SORTS)
 const { data: tasks, status, error, refresh } = useMyWork(filters)
 const { data: spaces } = useSpaceList('mine')
 const mySpaces = computed(() => (spaces.value ?? []).filter(space => space.role))

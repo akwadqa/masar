@@ -7,10 +7,11 @@ import { COMPOSER_SLOT } from '~/utils/pageScroll'
 const props = defineProps<{ space: SpaceDetail }>()
 
 const route = useRoute()
-// Every Task by default, completed included (client request, Oct 2026); the Status filter narrows it.
+// Active Tasks by default (Open, Working, Pending Review, Changes Required, Overdue); choosing a Status
+// shows any status (client revision 6, R7, 2026-11-01; reverses the Oct 2026 "all Tasks" default).
 // Recently updated or Creation date; manual order was dropped (client decision 2026-10-31).
 const SORTS: TaskSort[] = ['recently_updated', 'created']
-const { filters, setQuery, activeCount, clearFilters } = useTaskFilters({ completed: 'all', sort: 'recently_updated' }, SORTS)
+const { filters, setQuery, activeCount, clearFilters } = useTaskFilters({ sort: 'recently_updated' }, SORTS)
 
 const { data: tasks, status, error, refresh } = useTaskList(() => props.space.name, filters)
 const { data: labels } = useSpaceLabels(() => props.space.name)
@@ -194,7 +195,7 @@ watch(() => openPanels.value.join(), () => {
         >
           <div class="space-y-1">
             <p class="font-medium text-highlighted">
-              {{ activeCount || filters.assignedToMe || filters.ownedByMe ? 'No tasks match these filters' : 'No tasks yet' }}
+              {{ activeCount || filters.assignedToMe || filters.ownedByMe ? 'No tasks match these filters' : 'No active tasks' }}
             </p>
             <p class="text-sm text-muted">
               {{ canCreate ? 'Type a title in the row below and press Enter.' : 'Tasks in this Space are read-only.' }}
