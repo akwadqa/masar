@@ -66,9 +66,34 @@ const addItems = computed<DropdownMenuItem[]>(() => available.value.map(field =>
   onSelect: () => openChip(field)
 })))
 
+// Mobile freeze fix (client revision 6, R6): the values picker used to open on the next tick while the
+// field or operator menu was still closing. A modal menu locks the page (pointer events, scroll, iOS
+// touchmove) until its close animation ends, and on iOS that lock could stay, so nothing responded.
+// The menus are non-modal now, and the picker opens only once the menu reports it closed, without the
+// menu handing focus back to its button.
+const openAfterMenu = ref<TaskFilterField | null>(null)
+let keepFocus = false
+function onMenuOpen(open: boolean) {
+  const field = openAfterMenu.value
+  if (open || !field) return
+  openAfterMenu.value = null
+  void nextTick(() => { valuesOpen[field] = true })
+}
+const menuContent = {
+  align: 'start' as const,
+  onCloseAutoFocus: (event: Event) => {
+    if (keepFocus) event.preventDefault()
+    keepFocus = false
+  }
+}
+function openValuesAfterMenu(field: TaskFilterField) {
+  openAfterMenu.value = field
+  keepFocus = true
+}
+
 function openChip(field: TaskFilterField) {
   if (!pending.value.includes(field)) pending.value.push(field)
-  if (takesValues(operatorOf(props.filters, field))) void nextTick(() => { valuesOpen[field] = true })
+  if (takesValues(operatorOf(props.filters, field))) openValuesAfterMenu(field)
 }
 
 function setChip(field: TaskFilterField, operator: FilterOperator, values: string[]) {
@@ -79,7 +104,7 @@ function setChip(field: TaskFilterField, operator: FilterOperator, values: strin
 
 function setOperator(field: TaskFilterField, operator: FilterOperator) {
   setChip(field, operator, takesValues(operator) ? chipValues(props.filters, field) : [])
-  if (takesValues(operator) && !chipValues(props.filters, field).length) void nextTick(() => { valuesOpen[field] = true })
+  if (takesValues(operator) && !chipValues(props.filters, field).length) openValuesAfterMenu(field)
 }
 
 function removeChip(field: TaskFilterField) {
@@ -116,7 +141,7 @@ defineExpose({ reset: () => { pending.value = [] } })
       <UIcon :name="FIELDS[field].icon" class="size-4" :class="FIELDS[field].tone" />
       {{ FIELDS[field].label }}
     </span>
-    <UDropdownMenu v-if="CHIP_OPERATORS[field].length > 1" :items="operatorItems(field)" :content="{ align: 'start' }">
+    <UDropdownMenu v-if="CHIP_OPERATORS[field].length > 1" :items="operatorItems(field)" :modal="false" :content="menuContent" @update:open="onMenuOpen">
       <UButton
         color="neutral"
         variant="ghost"
@@ -156,7 +181,7 @@ defineExpose({ reset: () => { pending.value = [] } })
       @click="removeChip(field)"
     />
   </div>
-  <UDropdownMenu :items="addItems" :content="{ align: 'start' }">
+  <UDropdownMenu :items="addItems" :modal="false" :content="menuContent" @update:open="onMenuOpen">
     <UButton color="neutral" variant="outline" icon="i-lucide-list-filter" label="Filter" aria-label="Add filter" :ui="{ leadingIcon: 'text-filter-add' }" />
   </UDropdownMenu>
 </template>
