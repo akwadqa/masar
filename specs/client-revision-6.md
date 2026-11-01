@@ -42,6 +42,14 @@ DocType when deployed).
 
 The user's e-mail switch keeps muting e-mail. Docs (ADR-056, ADR-064, docs/01, docs/04 §6-7, docs/08 AS-15) and tests are updated with the change.
 
+## Follow-up: "Owned by me" (2026-11-02, minor, to `master` after #2 and #3)
+
+Managers want to track the Tasks they own. The Task Lists get an **Owned by me** toggle beside
+**Assigned to me** (`TaskFilterBar`, URL `mine=owned`, which the API already supported as `owned_by_me`).
+Both toggles can be on together: then the list shows Tasks I own AND am assigned to (client decision
+2026-11-02; URL `mine=assigned,owned`). A three-way "Everyone ·
+Assigned · Owned" control was tried and reverted the same day (client decision: a separate button).
+
 ## Not changed
 
 - Batch planning permissions (Managers only, ADR-043): the client asked to leave this as it is (2026-11-01).

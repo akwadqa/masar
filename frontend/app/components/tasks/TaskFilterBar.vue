@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { Label, SpaceSummary, TaskListFilters, TaskSort, UserRef } from '~/types/api'
 import type { FilterPanelKind } from '~/composables/workspace/useFilterPanel'
+import { toggleMine, type MinePart } from '~/utils/mineFilter'
 
 // One filter bar for every Task List: search, the filter chips (Status, Assignee, Owner, Priority,
 // Label, Space; specs/dynamic-task-filters.md) and sort. Feature, Version and Batch filters open as
@@ -73,6 +74,10 @@ const activePanelChips = computed(() => (Object.keys(PANELS) as FilterPanelKind[
 const control = computed(() => (props.singleRow ? 'w-full sm:w-auto sm:max-w-48' : 'max-sm:max-w-full max-sm:grow sm:w-44'))
 // One row: toggle labels appear once the bar is wide enough for them (container query).
 const toggleLabel = computed(() => (props.singleRow ? 'hidden @[87.5rem]:inline' : ''))
+// Assigned to me and Owned by me are independent toggles over the one `mine` URL value.
+function onMine(part: MinePart) {
+  emit('set', { mine: toggleMine(props.filters, part) })
+}
 </script>
 
 <template>
@@ -111,9 +116,24 @@ const toggleLabel = computed(() => (props.singleRow ? 'hidden @[87.5rem]:inline'
           :ui="{ leadingIcon: 'text-filter-mine' }"
           :aria-pressed="filters.assignedToMe"
           aria-label="Assigned to me"
-          @click="emit('set', { mine: filters.assignedToMe ? null : 'assigned' })"
+          @click="onMine('assigned')"
         >
           <span :class="toggleLabel">Assigned to me</span>
+        </UButton>
+      </UTooltip>
+      <!-- Managers track the tasks they own (client request 2026-11-02). The two toggles combine:
+           both on = tasks I own AND am assigned to (client decision 2026-11-02). -->
+      <UTooltip v-if="showMine" :text="singleRow ? 'Owned by me' : undefined" :disabled="!singleRow">
+        <UButton
+          color="neutral"
+          icon="i-lucide-crown"
+          :variant="filters.ownedByMe ? 'soft' : 'outline'"
+          :ui="{ leadingIcon: 'text-filter-owner' }"
+          :aria-pressed="filters.ownedByMe"
+          aria-label="Owned by me"
+          @click="onMine('owned')"
+        >
+          <span :class="toggleLabel">Owned by me</span>
         </UButton>
       </UTooltip>
       <UTooltip :text="singleRow ? 'Important' : undefined" :disabled="!singleRow">

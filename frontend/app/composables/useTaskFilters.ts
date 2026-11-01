@@ -3,6 +3,7 @@ import type { DueFilter, TaskFilterField, TaskListFilters, TaskSort } from '~/ty
 import { CHIP_OPERATORS, CHIP_PARAMS, chipIsActive, parseChips } from '~/utils/taskFilterChips'
 import { nextColumnSort, parseColumnSort, type TaskColumn } from '~/utils/taskSort'
 import { readSavedFilters, saveFilters } from '~/utils/savedFilters'
+import { parseMine } from '~/utils/mineFilter'
 
 const DUE: DueFilter[] = ['overdue', 'today', 'week', 'none']
 const SORT_PARAMS: Record<string, TaskSort> = { recent: 'recently_updated', due: 'due_date', created: 'created', manual: 'manual' }
@@ -65,11 +66,9 @@ export function useTaskFilters(
 
   const filters = computed<TaskListFilters>(() => {
     const show = str('show')
-    const mine = str('mine') ?? (defaults.assignedToMe ? 'assigned' : undefined) // 'none' = no mine filter
     return {
       completed: show === 'completed' || show === 'all' || show === 'open' ? show : (defaults.completed ?? 'open'),
-      assignedToMe: mine === 'assigned',
-      ownedByMe: mine === 'owned',
+      ...parseMine(str('mine'), defaults.assignedToMe),
       important: str('important') === '1',
       myDay: str('myday') === '1',
       ...parseChips(str),
