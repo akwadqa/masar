@@ -2,6 +2,8 @@ import { useDocumentVisibility, useIntervalFn } from '@vueuse/core'
 import type { MasarNotification, NotificationPage } from '~/types/api'
 
 const POLL_MS = 60_000
+// While the realtime socket is connected the poll is only a safety net (specs/realtime.md).
+const CONNECTED_POLL_MS = 5 * 60_000
 export type PushState = 'unsupported' | 'blocked' | 'off' | 'on'
 
 /** The bell (client revision 5): the signed-in person's notifications, newest first, with read state.
@@ -59,13 +61,16 @@ export function useNotifications() {
   return { items, unread, nextBefore, loaded, loading, load, refreshCount, markRead, markAllRead }
 }
 
-/** Keeps the unread count current while the Workspace is open; call once (default layout). */
+/** Keeps the unread count current while the Workspace is open; call once (default layout).
+ *  Live events (useLiveNotifications) do the work while connected, so the poll is then only a fallback. */
 export function useNotificationPolling() {
   const { refreshCount } = useNotifications()
   const visibility = useDocumentVisibility()
   const { user } = useSession()
+  const { connected } = useRealtime()
   const active = computed(() => !!user.value?.isMasarUser)
-  const { pause, resume } = useIntervalFn(() => { if (visibility.value === 'visible') void refreshCount() }, POLL_MS, { immediate: false })
+  const interval = computed(() => (connected.value ? CONNECTED_POLL_MS : POLL_MS))
+  const { pause, resume } = useIntervalFn(() => { if (visibility.value === 'visible') void refreshCount() }, interval, { immediate: false })
   watch([active, visibility], ([isActive, state]) => {
     if (isActive && state === 'visible') {
       void refreshCount()
@@ -74,6 +79,58 @@ export function useNotificationPolling() {
       pause()
     }
   }, { immediate: true })
+}
+
+/**
+ * Instant bell (specs/realtime.md, F2; client decision 2026-11-09: every notification type shows a toast).
+ * A `masar_notification` event refreshes the count and list, and each new unread entry pops up once.
+ * Entries already unread when the Workspace opens are not toasted. Call once (default layout).
+ */
+export function useLiveNotifications() {
+  const api = useMasarApi()
+  const { refreshCount, markRead } = useNotifications()
+  const { on } = useRealtime()
+  const { user } = useSession()
+  const toast = useToast()
+  const router = useRouter()
+  const shown = new Set<string>()
+  let primed: Promise<void> | null = null
+
+  const newest = () => api.get<MasarNotification[]>('masar.api.notifications.latest').catch(() => [] as MasarNotification[])
+
+  function prime() {
+    primed ??= newest().then(items => items.forEach(item => shown.add(item.name)))
+    return primed
+  }
+
+  watch(() => user.value?.isMasarUser, (isMasarUser) => {
+    shown.clear()
+    primed = null
+    if (isMasarUser) void prime()
+  }, { immediate: true })
+
+  on('masar_notification', async () => {
+    void refreshCount()
+    await prime()
+    // Oldest first, so several toasts read in the order things happened.
+    for (const item of (await newest()).reverse()) {
+      if (item.isRead || shown.has(item.name)) continue
+      shown.add(item.name)
+      toast.add({
+        title: item.subject,
+        description: item.detail ?? undefined,
+        icon: 'i-lucide-bell',
+        actions: item.link
+          ? [{ label: 'Open', color: 'neutral', variant: 'outline', onClick: () => open(item) }]
+          : undefined
+      })
+    }
+  })
+
+  function open(item: MasarNotification) {
+    void markRead([item.name])
+    if (item.link) void router.push(item.link)
+  }
 }
 
 function setAppBadge(count: number) {

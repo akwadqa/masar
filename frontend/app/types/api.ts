@@ -141,9 +141,20 @@ export type Boot =
       preferences: Preferences | null
       timezone: string
       serverTime: string
+      /** Site name: the socket.io namespace (specs/realtime.md). */
+      sitename: string
+      /** False when the site disables Frappe's realtime; the Workspace then only polls. */
+      realtime: boolean
     }
 
 export type AuthenticatedBoot = Extract<Boot, { authenticated: true }>
+
+/** Realtime events (specs/realtime.md). Payloads carry ids only; data is refetched through the API. */
+export interface RealtimeEvents {
+  masar_space_changed: { space: string }
+  masar_batch_changed: { batch: string }
+  masar_notification: Record<string, never>
+}
 
 export interface LabelRef {
   name: string

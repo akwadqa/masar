@@ -6,6 +6,7 @@ from frappe.model.document import Document
 from frappe.utils import getdate, now_datetime, nowdate
 
 from masar.permissions import get_space_role
+from masar.services import realtime_service
 from masar.services.activity import record_activity
 from masar.services.personal.my_day_service import add_to_my_day, due_task_people, is_due_today
 from masar.services.personal.my_day_service import clear_task as clear_my_day
@@ -250,6 +251,8 @@ class MasarTask(Document):
 
 	def on_trash(self):
 		cascade_task_deletion([self.name])
+		# A deleted Task leaves no history entry (its history goes with it), so announce it here.
+		realtime_service.space_changed(self.space)
 
 
 def cascade_task_deletion(task_names: list[str]) -> None:

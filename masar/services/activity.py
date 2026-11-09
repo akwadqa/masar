@@ -2,6 +2,8 @@ import json
 
 import frappe
 
+from masar.services import realtime_service
+
 
 def record_activity(doc, event: str, data: dict | None = None, space: str | None = None):
 	"""Append a history entry. Callers have already authorised the underlying change, and
@@ -22,3 +24,8 @@ def record_activity(doc, event: str, data: dict | None = None, space: str | None
 	from masar.services.inbox_service import from_activity
 
 	from_activity(doc.doctype, doc.name, entry_space, event, data or {})
+	# Live updates (specs/realtime.md) use the same hook: every change records history, while many
+	# service writes (db.set_value, db_set, qb.update) skip Frappe's document events.
+	realtime_service.space_changed(entry_space)
+	if doc.doctype == "Masar Batch":
+		realtime_service.batch_changed(doc.name)

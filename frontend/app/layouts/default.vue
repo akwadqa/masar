@@ -14,6 +14,10 @@ const navigation = computed<NavigationMenuItem[]>(() => [
 // While the sidebar search has a term, its results replace the navigation below it.
 const searching = ref(false)
 useNotificationPolling()
+// Live updates (specs/realtime.md): one socket for the Workspace, then the features that listen to it.
+useRealtimeConnection()
+useLiveRefresh()
+useLiveNotifications()
 </script>
 
 <template>

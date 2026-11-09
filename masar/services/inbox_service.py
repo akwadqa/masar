@@ -32,6 +32,7 @@ from frappe.query_builder.functions import Count
 from frappe.utils import add_to_date, cint, formatdate, get_url, now_datetime
 
 from masar.permissions import get_user_spaces, is_masar_user, require_masar_user
+from masar.services import realtime_service
 from masar.services.personal import preference_service
 from masar.services.serializers import iso_datetime, user_refs
 from masar.utils.context import masar_service
@@ -135,6 +136,8 @@ def _notify(
 			if kind not in NOT_EMAILED_HERE:
 				row.db_set("email_status", _send_email(row, recipient, email), update_modified=False)
 		state["push"].add(recipient)
+		# Open Workspace tabs refresh their bell at once (specs/realtime.md); the push wakes installed apps.
+		realtime_service.users_notified([recipient])
 
 
 def _send_email(row, recipient: str, email: dict) -> str:
@@ -581,4 +584,6 @@ def mark_read(names: list[str] | None = None, read: bool = True, all_unread: boo
 		update = update.where((row.recipient == user) & row.name.isin(names))
 	with masar_service():
 		update.run()
+	# The person's other tabs and devices update their badge too (specs/realtime.md).
+	realtime_service.users_notified([user])
 	return {"unread": unread_count()}
