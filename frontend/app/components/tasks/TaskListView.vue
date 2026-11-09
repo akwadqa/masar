@@ -95,15 +95,13 @@ watch(() => openPanels.value.join(), () => {
           @toggle-panel="togglePanel"
         >
           <template #actions>
-            <!-- Phones: the Plus icon alone in a 44 px square (client request 2026-10-30), named for assistive
-                 technology; no tooltip, which would stay visible after a tap on iPhone. -->
+            <!-- Hidden on phones (client request 2026-11-09): the new-task field below the list is the way to
+                 add a Task there. -->
             <UButton
               v-if="canCreate"
-              class="ms-auto max-sm:size-11 max-sm:justify-center max-sm:p-0"
+              class="ms-auto max-sm:hidden"
               icon="i-lucide-plus"
               label="New task"
-              :aria-label="phone ? 'New task' : undefined"
-              :ui="{ label: 'max-sm:hidden' }"
               @click="listRef?.focusCreate()"
             >
               <template #trailing>
