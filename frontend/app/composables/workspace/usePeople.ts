@@ -2,8 +2,8 @@ import type { UserRef } from '~/types/api'
 
 /**
  * Names and avatars for the people live events mention by id (viewers, typing, editing; specs/realtime.md).
- * Looked up once per person through `masar.api.spaces.people`, which names only people who share a Space
- * with the viewer; anyone else is shown as "Someone".
+ * Looked up once per person through `masar.api.spaces.people`, which names every active Masar user (client
+ * decision 2026-11-09); anyone else is shown as "Someone".
  */
 export function usePeople(users: MaybeRefOrGetter<string[]>) {
   const api = useMasarApi()

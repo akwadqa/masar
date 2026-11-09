@@ -113,16 +113,13 @@ class TestRealtime(IntegrationTestCase):
 		as_user("a_member")
 		self.assertRaises(frappe.ValidationError, task_service.editing, task, "status", True)
 
-	def test_people_names_only_those_sharing_a_space(self):
+	def test_people_names_masar_users_across_spaces_only(self):
+		# Client decision 2026-11-09: viewers are named across Spaces; non-Masar users never are.
 		as_user("a_member")
-		names = {
-			p["name"]
-			for p in space_service.people([email("a_manager"), email("b_member"), email("outsider")])
-		}
-		self.assertEqual(names, {email("a_manager")})
-		as_user("ab_member")
-		names = {p["name"] for p in space_service.people([email("a_manager"), email("b_member")])}
-		self.assertEqual(names, {email("a_manager"), email("b_member")})
+		wanted = [*map(email, ["a_manager", "b_member", "outsider", "no_role"]), "nobody@x.invalid"]
+		names = {p["name"] for p in space_service.people(wanted)}
+		self.assertEqual(names, {email("a_manager"), email("b_member"), email("outsider")})
+		self.assertEqual(space_service.people("not a list"), [])
 
 	def test_rollback_announces_nothing(self):
 		with patch("frappe.publish_realtime") as publish:

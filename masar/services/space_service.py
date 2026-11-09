@@ -171,25 +171,26 @@ def members(space_name: str) -> list[dict]:
 
 
 def people(users: list[str]) -> list[dict]:
-	"""Names and avatars for live presence, typing and edit markers (specs/realtime.md). Only people who
-	share a Space with the caller (and the caller) are named; anyone else stays unnamed, so presence on a
-	Batch never reveals who works in Spaces the caller cannot see."""
+	"""Names and avatars for live presence, typing and edit markers (specs/realtime.md). Every active
+	Masar user is named, also across Spaces (client decision 2026-11-09: Frappe already sends viewer ids to
+	the browser, so hiding the name protected little). People without Masar access stay unnamed, so the
+	lookup never reveals other users of the site."""
 	require_masar_user()
 	wanted = sorted({u for u in users if isinstance(u, str) and u})[:50] if isinstance(users, list) else []
-	mine = list(get_user_spaces())
-	shared = {frappe.session.user} & set(wanted)
-	if wanted and mine:
-		member = frappe.qb.DocType("Masar Space Member")
-		rows = (
-			frappe.qb.from_(member)
-			.select(member.user)
-			.distinct()
-			.where(member.parent.isin(mine) & (member.parenttype == "Masar Space") & member.user.isin(wanted))
-			.run()
-		)
-		shared |= {user for (user,) in rows}
-	refs = user_refs(list(shared))
-	return [refs[user] for user in wanted if user in refs]
+	if not wanted:
+		return []
+	user, has_role = frappe.qb.DocType("User"), frappe.qb.DocType("Has Role")
+	rows = (
+		frappe.qb.from_(user)
+		.join(has_role)
+		.on((has_role.parent == user.name) & (has_role.parenttype == "User"))
+		.select(user.name)
+		.distinct()
+		.where((user.enabled == 1) & has_role.role.isin(MASAR_ROLES) & user.name.isin(wanted))
+		.run()
+	)
+	refs = user_refs([name for (name,) in rows])
+	return [refs[name] for name in wanted if name in refs]
 
 
 def user_candidates(query: str = "", space: str | None = None, limit: int = 20) -> list[dict]:

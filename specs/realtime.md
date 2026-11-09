@@ -13,6 +13,11 @@ deferred to accepted.
 4. **Every notification type shows a toast** (not only mentions and assignments).
 5. **Presence shows on Tasks, Batches and Spaces.**
 6. Changes are evaluated on production; there is no test site (client decision 2026-11-09).
+7. **Viewers are named across Spaces** (client decision 2026-11-09, after evaluation). Frappe's
+   `doc_viewers` already sends viewer ids (e-mail addresses) to everyone in a room, so a Batch shared by
+   several Spaces shows the real names of all its viewers instead of "Someone". Users without Masar
+   access are never named. Presence is a pill with a live dot and "viewing", so it is not mistaken for
+   member avatars.
 
 ## Principles
 
@@ -36,7 +41,7 @@ One owner per job (see the proposal's "Module design" section for the reasoning)
 | `services/activity.py` | Calls `space_changed` for an entry with a Space, `batch_changed` for a Batch entry and `task_changed` for a Task entry (comments, files, time and field changes all record Task history) | — |
 | `services/comment_service.py` | `react` calls `task_changed` (reactions record no history); `typing(task)` | — |
 | `services/task_service.py` | `editing(task, field, active)` for `title` and `description` | — |
-| `services/space_service.py` | `people(users)`: names only people who share a Space with the caller | `masar.api.spaces.people` |
+| `services/space_service.py` | `people(users)`: names and avatars of active Masar users (across Spaces, decision 7); others stay unnamed | `masar.api.spaces.people` |
 | `api/comments.py`, `api/tasks.py` | `comments.typing`, `tasks.editing`: POST, CSRF (`masar_write`), rate-limited to 60 a minute per Task and IP, write nothing | — |
 | Task controller `on_trash` | Calls `space_changed` (a deleted Task's history is deleted with it) | — |
 | `services/inbox_service.py` | Calls `users_notified` next to the Web Push wake-up | — |
