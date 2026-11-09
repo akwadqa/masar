@@ -48,6 +48,10 @@ useHead(() => ({ title: space.value ? `${space.value.title} · Masar` : 'Masar' 
         <template #leading>
           <UDashboardSidebarCollapse />
         </template>
+        <!-- Other viewers sit right after the Space name (client feedback 2026-11-09). -->
+        <template #trailing>
+          <PresenceAvatars v-if="space" doctype="Masar Space" :name="space.name" />
+        </template>
         <template #right>
           <template v-if="space">
             <SpaceMemberStack v-if="space.members.length" :space="space" />

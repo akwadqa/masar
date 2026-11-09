@@ -207,7 +207,9 @@ The Action stays visible in the parent's list, rendered as "Promoted → <Task t
 
 ## ADR-017 — Realtime deferred; user-room events only {#adr-017}
 
-**Decision.** Phases 1–7 keep data fresh via mutation responses, targeted invalidation and refetch on window focus/reconnect. Live updates from other users are OPT-03. If enabled later, Masar publishes ids-only events to **user rooms** of currently authorised users (`frappe.publish_realtime(..., user=..., after_commit=True)`), never to doctype rooms (doctype room joins check only doctype-level permission — INFERRED from source; would expose ids to every Masar User).
+**Status: Accepted and implemented by client decision 2026-11-09** (`specs/realtime.md`). The room rule below is confirmed from Frappe v16 source: DocType rooms check DocType-level read only; document rooms (`doc_subscribe`, `doc_open`) check document-level read, which runs Masar's `has_permission` hooks, so Masar also uses document rooms for one Task, Batch or Space. Permission is checked only on joining, so every payload stays ids-only. All publishing goes through `masar/realtime.py`.
+
+**Original decision.** Phases 1–7 keep data fresh via mutation responses, targeted invalidation and refetch on window focus/reconnect. Live updates from other users are OPT-03. If enabled later, Masar publishes ids-only events to **user rooms** of currently authorised users (`frappe.publish_realtime(..., user=..., after_commit=True)`), never to doctype rooms (doctype room joins check only doctype-level permission — INFERRED from source; would expose ids to every Masar User).
 
 ## ADR-018 — Field-scoped optimistic concurrency {#adr-018}
 
@@ -737,7 +739,9 @@ Unresolvable references read neutrally ("a Batch", "(deleted label)"); nothing i
 
 ## ADR-058 — Keeping discussions fresh {#adr-058}
 
-**Approach.**
+**Status: Superseded by client decision 2026-11-09** (`specs/realtime.md`, ADR-017). A `masar_timeline` event in the Task's document room now refreshes the timeline at once. The 20 s poll below remains as the fallback and slows to 2 minutes while the socket is connected. The objections below are answered as follows: the Workspace gets `socket.io-client`; joining a Task room runs Masar's own permission hook; payloads carry ids only, so a member removed while subscribed learns nothing new.
+
+**Original approach.**
 - The timeline re-reads its newest page every 20 s while the page is visible, and on window focus, through the normal permission-checked HTTP API.
 - New comments are appended and changed comments replaced.
 - The poster sees their own comment immediately.

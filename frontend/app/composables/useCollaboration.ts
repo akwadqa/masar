@@ -3,6 +3,9 @@ import { MasarApiError, toApiError } from '~/utils/apiError'
 import { mergeNewestPage } from '~/utils/timelineMerge'
 
 const POLL_MS = 20_000
+// With the realtime socket connected, `masar_timeline` refreshes at once and the poll is a safety net
+// (specs/realtime.md; supersedes ADR-058's 20 s on 2026-11-09).
+const CONNECTED_POLL_MS = 2 * 60_000
 // The server's page maximum; the poll only needs the newest few items to find its overlap.
 const PAGE_SIZE = 100
 const POLL_SIZE = 30
@@ -12,8 +15,9 @@ const MAX_PAGES = 100
 /**
  * A Task's whole timeline for one view, oldest first in server order (client revision 6, R3: nothing is
  * hidden behind "show earlier", superseding ADR-057's windowing). Pages are read until the start. While
- * visible it refreshes the newest page every 20 s and on focus (permission-checked HTTP, no websocket —
- * ADR-058) and merges it by position, so other people's comments appear in order (R2).
+ * visible it refreshes the newest page when the Task's `masar_timeline` event arrives, on focus, and by
+ * polling (20 s, or 2 min while the socket is connected), and merges it by position, so other people's
+ * comments appear in order (R2). Data always comes through the permission-checked HTTP API.
  */
 export function useTimeline(task: MaybeRefOrGetter<string>, view: MaybeRefOrGetter<TimelineView>) {
   const api = useMasarApi()
@@ -84,15 +88,23 @@ export function useTimeline(task: MaybeRefOrGetter<string>, view: MaybeRefOrGett
   watch(() => [toValue(task), toValue(view)], () => void load(), { immediate: true })
 
   if (import.meta.client) {
+    const { on, connected } = useRealtime()
+    on('masar_timeline', (payload) => { if (payload.task === toValue(task)) void refreshNewest() })
     let timer: ReturnType<typeof setInterval> | undefined
-    const tick = () => { if (document.visibilityState === 'visible') void refreshNewest() }
+    let lastPoll = Date.now()
+    const poll = () => {
+      if (document.visibilityState !== 'visible') return
+      lastPoll = Date.now()
+      void refreshNewest()
+    }
+    const tick = () => { if (!connected.value || Date.now() - lastPoll >= CONNECTED_POLL_MS) poll() }
     onMounted(() => {
       timer = setInterval(tick, POLL_MS)
-      window.addEventListener('focus', tick)
+      window.addEventListener('focus', poll)
     })
     onBeforeUnmount(() => {
       clearInterval(timer)
-      window.removeEventListener('focus', tick)
+      window.removeEventListener('focus', poll)
     })
   }
 

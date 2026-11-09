@@ -9,7 +9,8 @@ import { nameUploadedFile, transferFiles } from '~/utils/transferFiles'
 // Rich-text composer for new comments and edits (ADR-052). The server sanitises everything; this
 // component only produces HTML, keeps drafts and uploads pasted or dropped files.
 const props = defineProps<{ task: string, comment?: TaskComment, autofocus?: boolean }>()
-const emit = defineEmits<{ saved: [comment: TaskComment], cancel: [] }>()
+// `typing`: a character was typed into a new comment, for "… is typing" (specs/realtime.md, phase 5).
+const emit = defineEmits<{ saved: [comment: TaskComment], cancel: [], typing: [] }>()
 
 const editing = computed(() => !!props.comment)
 const draftKey = computed(() => `masar:comment-draft:${props.task}`)
@@ -189,6 +190,7 @@ async function submit() {
   }
 }
 function onKeydown(event: KeyboardEvent) {
+  if (!editing.value && event.key.length === 1 && !event.metaKey && !event.ctrlKey) emit('typing')
   if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) {
     event.preventDefault()
     void submit()

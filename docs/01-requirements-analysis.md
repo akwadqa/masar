@@ -292,7 +292,7 @@ ADR-014 (Phase 0) is amended by ADR-060 and ADR-061: Managers void others' entri
 |---|---|---|
 | OPT-01 | Start/stop timer on top of manual entry | Convenience for heavy time loggers. |
 | OPT-02 | In-app notification inbox | Reduces email reliance. |
-| OPT-03 | Realtime live list updates for other users' edits | Collaboration freshness (Phase 1 uses refetch-on-focus). |
+| OPT-03 | Realtime live list updates for other users' edits | Collaboration freshness. **Accepted 2026-11-09** (`specs/realtime.md`); polling remains the fallback. |
 | OPT-04 | Saved personal filter views | Faster navigation. |
 | OPT-05 | Burn-down chart for Batches | Richer sprint analytics. |
 | OPT-06 | CSV export of a Space's Tasks | Reporting. Would require the same permission filtering. |

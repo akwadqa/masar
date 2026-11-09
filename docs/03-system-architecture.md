@@ -74,7 +74,7 @@ Development topology (VERIFIED by the spike):
 - Frappe v16.54.0 bench runs in the official `frappe/bench` Docker image (arm64; Python 3.14.10, Node 24.22.1, bench 5.31.1) with MariaDB 11.8 and Redis 7 containers via Docker Compose, the `masar` app source bind-mounted. Native bench on this macOS machine failed (`pkg-config` missing, no Homebrew); Docker avoids host changes.
 - Nuxt dev server on `http://localhost:3000/` with `nitro.devProxy` forwarding `/api`, `/desk`, `/app`, `/assets`, `/files`, `/private/files`, `/socket.io`, `/update-password` to Frappe, so the browser sees one origin; an `nginx` container replicates the production gateway for E2E runs.
 - Playwright runs from the official Playwright Docker image on the compose network (used successfully in the spike).
-- Realtime: bench's default `socketio_backend` is still Node in v16 (VERIFIED); irrelevant until OPT-03.
+- Realtime: bench's default `socketio_backend` is still Node in v16 (VERIFIED). Masar uses it since OPT-03 (`specs/realtime.md`); the Workspace connects to `/socket.io` on the same origin, namespace `/<site name>`.
 
 ## 4. Authentication and session
 

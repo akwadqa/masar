@@ -170,6 +170,29 @@ def members(space_name: str) -> list[dict]:
 	return sorted(({**refs[user], "role": role} for user, role in rows), key=lambda r: r["fullName"].lower())
 
 
+def people(users: list[str]) -> list[dict]:
+	"""Names and avatars for live presence, typing and edit markers (specs/realtime.md). Every active
+	Masar user is named, also across Spaces (client decision 2026-11-09: Frappe already sends viewer ids to
+	the browser, so hiding the name protected little). People without Masar access stay unnamed, so the
+	lookup never reveals other users of the site."""
+	require_masar_user()
+	wanted = sorted({u for u in users if isinstance(u, str) and u})[:50] if isinstance(users, list) else []
+	if not wanted:
+		return []
+	user, has_role = frappe.qb.DocType("User"), frappe.qb.DocType("Has Role")
+	rows = (
+		frappe.qb.from_(user)
+		.join(has_role)
+		.on((has_role.parent == user.name) & (has_role.parenttype == "User"))
+		.select(user.name)
+		.distinct()
+		.where((user.enabled == 1) & has_role.role.isin(MASAR_ROLES) & user.name.isin(wanted))
+		.run()
+	)
+	refs = user_refs([name for (name,) in rows])
+	return [refs[name] for name in wanted if name in refs]
+
+
 def user_candidates(query: str = "", space: str | None = None, limit: int = 20) -> list[dict]:
 	"""Active Masar users for owner/member pickers. Requires the right to manage the Space (or to
 	create Spaces). User records are not readable by Website Users through Frappe's generic APIs,

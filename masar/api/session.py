@@ -44,6 +44,10 @@ def boot():
 		"csrfToken": csrf_token,
 		"timezone": frappe.utils.get_system_timezone(),
 		"serverTime": iso_datetime(now_datetime()),
+		# Live updates (specs/realtime.md): the socket.io namespace is the site name, as in Frappe's own
+		# boot (`sitename`); a site that disables Frappe's realtime (`disable_async`) gets polling only.
+		"sitename": frappe.local.site,
+		"realtime": not frappe.conf.get("disable_async"),
 	}
 
 

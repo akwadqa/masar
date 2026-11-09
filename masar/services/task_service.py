@@ -31,7 +31,7 @@ from masar.permissions import (
 	require_task_access,
 	require_task_write,
 )
-from masar.services import inbox_service, task_filters
+from masar.services import inbox_service, realtime_service, task_filters
 from masar.services.batch_service import batch_refs, move_tasks
 from masar.services.personal.my_day_service import my_day_subquery, my_day_tasks, set_my_day
 from masar.services.planning_service import planning_refs
@@ -594,6 +594,22 @@ def _detail(doc) -> dict:
 
 def get_detail(task_name: str) -> dict:
 	return _detail(require_task_access(task_name))
+
+
+# Fields whose inline editing other viewers see as "… is editing" (specs/realtime.md, phase 5).
+EDIT_MARKER_FIELDS = ("title", "description")
+
+
+def editing(task_name: str, field: str, active: bool) -> dict:
+	"""Tell the Task's open viewers that the caller started or stopped editing a field. A hint only: it
+	locks nothing, and saving still checks for conflicts (ADR-018). Members only; nothing is written."""
+	if field not in EDIT_MARKER_FIELDS:
+		frappe.throw(_("Unknown field."))
+	require_task_access(task_name)
+	realtime_service.task_activity(
+		task_name, realtime_service.EDITING, {"field": field, "active": bool(active)}
+	)
+	return {"ok": True}
 
 
 # --------------------------------------------------------------------------- writes

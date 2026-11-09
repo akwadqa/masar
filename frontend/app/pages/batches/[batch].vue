@@ -120,6 +120,10 @@ const menuItems = computed(() => {
           <UDashboardSidebarCollapse />
           <UButton to="/batches" icon="i-lucide-arrow-left" color="neutral" variant="ghost" size="sm" aria-label="All Batches" />
         </template>
+        <!-- Other viewers sit right after the Batch name (client feedback 2026-11-09). -->
+        <template #trailing>
+          <PresenceAvatars v-if="batch" doctype="Masar Batch" :name="batch.name" />
+        </template>
         <template #right>
           <template v-if="batch">
             <BatchStatusBadge :status="batch.status" />

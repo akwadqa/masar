@@ -141,9 +141,30 @@ export type Boot =
       preferences: Preferences | null
       timezone: string
       serverTime: string
+      /** Site name: the socket.io namespace (specs/realtime.md). */
+      sitename: string
+      /** False when the site disables Frappe's realtime; the Workspace then only polls. */
+      realtime: boolean
     }
 
 export type AuthenticatedBoot = Extract<Boot, { authenticated: true }>
+
+/** Realtime events (specs/realtime.md). Payloads carry ids only; data is refetched through the API. */
+export interface RealtimeEvents {
+  masar_space_changed: { space: string }
+  masar_batch_changed: { batch: string }
+  masar_notification: Record<string, never>
+  /** The Task's comments, reactions, files, time or fields changed (Task room). */
+  masar_timeline: { task: string }
+  /** Someone is writing a comment on the Task (Task room, at most every 3 s). */
+  masar_typing: { task: string, user: string }
+  /** Someone opened or closed a Task field for editing (Task room; a hint, nothing is locked). */
+  masar_editing: { task: string, user: string, field: EditMarkerField, active: boolean }
+  /** Frappe's own: who has this document open (open_doc room). */
+  doc_viewers: { doctype: string, docname: string, users: string[] }
+}
+
+export type EditMarkerField = 'title' | 'description'
 
 export interface LabelRef {
   name: string

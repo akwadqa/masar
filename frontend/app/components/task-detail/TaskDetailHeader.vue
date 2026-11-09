@@ -16,6 +16,8 @@ const copyLink = useCopyLink()
       <SpaceIcon :space="space ?? { name: task.space }" size="sm" />
       <span class="min-w-0 max-w-48 truncate">{{ task.spaceTitle }}</span>
     </NuxtLink>
+    <!-- Other viewers sit beside the Space name (client feedback 2026-11-09). -->
+    <PresenceAvatars doctype="Masar Task" :name="task.name" />
     <div class="ms-auto flex items-center gap-1">
       <slot name="planning" />
       <UTooltip text="Copy link">
