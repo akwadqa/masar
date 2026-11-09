@@ -17,6 +17,7 @@ const copyLink = useCopyLink()
       <span class="min-w-0 max-w-48 truncate">{{ task.spaceTitle }}</span>
     </NuxtLink>
     <div class="ms-auto flex items-center gap-1">
+      <PresenceAvatars doctype="Masar Task" :name="task.name" />
       <slot name="planning" />
       <UTooltip text="Copy link">
         <UButton icon="i-lucide-link" color="neutral" variant="ghost" square aria-label="Copy link" @click="copyLink(`/tasks/${task.name}`)" />

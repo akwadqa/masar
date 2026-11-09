@@ -25,7 +25,7 @@ from masar.permissions import (
 	require_task_access,
 	require_task_write,
 )
-from masar.services import inbox_service
+from masar.services import inbox_service, realtime_service
 from masar.services.activity import record_activity
 from masar.services.rich_text import plain_text, sanitize_comment
 from masar.services.serializers import iso_datetime, user_refs
@@ -355,7 +355,17 @@ def react(comment_name: str, emoji: str, active: bool) -> dict:
 				inbox_service.for_reaction(doc, emoji)
 		elif not active and existing:
 			frappe.delete_doc("Masar Comment Reaction", existing)
+	# Reactions record no history, so the Task's open viewers are told here (specs/realtime.md).
+	realtime_service.task_changed(doc.task)
 	return get_comment(doc.name)
+
+
+def typing(task_name: str) -> dict:
+	"""Tell the Task's open viewers that the caller is writing a comment (specs/realtime.md, phase 5).
+	Members only (others get 404, as everywhere); nothing is written."""
+	require_task_access(task_name)
+	realtime_service.task_activity(task_name, realtime_service.TYPING)
+	return {"ok": True}
 
 
 def mention_candidates(task_name: str, query: str = "", limit: int = 8) -> list[dict]:

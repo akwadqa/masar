@@ -1,6 +1,7 @@
 import builtins
 
 import frappe
+from frappe.rate_limiter import rate_limit
 from frappe.utils import sbool
 
 from masar.services import task_service
@@ -81,6 +82,16 @@ def lookup(names):
 @frappe.whitelist(methods=["GET"])
 def get(task: str):
 	return task_service.get_detail(task)
+
+
+# Sent when a field opens or closes for editing, and every 20 s while it stays open.
+@frappe.whitelist(methods=["POST"])
+@rate_limit(key="task", limit=60, seconds=60)
+@masar_write
+def editing(task: str, field: str, active=True):
+	"""Masar member of the Task's Space. Shows "… is editing" on a field to the Task's open viewers; a hint
+	only, nothing is locked or written."""
+	return task_service.editing(task, field, sbool(active))
 
 
 @frappe.whitelist(methods=["POST"])

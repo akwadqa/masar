@@ -170,6 +170,28 @@ def members(space_name: str) -> list[dict]:
 	return sorted(({**refs[user], "role": role} for user, role in rows), key=lambda r: r["fullName"].lower())
 
 
+def people(users: list[str]) -> list[dict]:
+	"""Names and avatars for live presence, typing and edit markers (specs/realtime.md). Only people who
+	share a Space with the caller (and the caller) are named; anyone else stays unnamed, so presence on a
+	Batch never reveals who works in Spaces the caller cannot see."""
+	require_masar_user()
+	wanted = sorted({u for u in users if isinstance(u, str) and u})[:50] if isinstance(users, list) else []
+	mine = list(get_user_spaces())
+	shared = {frappe.session.user} & set(wanted)
+	if wanted and mine:
+		member = frappe.qb.DocType("Masar Space Member")
+		rows = (
+			frappe.qb.from_(member)
+			.select(member.user)
+			.distinct()
+			.where(member.parent.isin(mine) & (member.parenttype == "Masar Space") & member.user.isin(wanted))
+			.run()
+		)
+		shared |= {user for (user,) in rows}
+	refs = user_refs(list(shared))
+	return [refs[user] for user in wanted if user in refs]
+
+
 def user_candidates(query: str = "", space: str | None = None, limit: int = 20) -> list[dict]:
 	"""Active Masar users for owner/member pickers. Requires the right to manage the Space (or to
 	create Spaces). User records are not readable by Website Users through Frappe's generic APIs,

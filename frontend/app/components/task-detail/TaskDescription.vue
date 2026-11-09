@@ -5,13 +5,16 @@ import type { Editor } from '@tiptap/vue-3'
 // Task description as rich text stored as Markdown (client revision 2): the same editor as comments,
 // with Markdown shortcuts (**bold**, - lists, # headings, `code`). The server keeps Markdown and
 // removes any raw HTML. Changes are saved when the editor loses focus.
-const props = defineProps<{ value: string | null, editable: boolean }>()
-const emit = defineEmits<{ save: [markdown: string | null] }>()
+// `marker`: "Ahmed is editing" when someone else has the description open (specs/realtime.md, phase 5);
+// `editing` reports this person's own editing so others see that marker.
+const props = defineProps<{ value: string | null, editable: boolean, marker?: string }>()
+const emit = defineEmits<{ save: [markdown: string | null], editing: [active: boolean] }>()
 
 const markdown = ref(props.value ?? '')
 const focused = ref(false)
 // Follow the server value except while the user is writing.
 watch(() => props.value, (value) => { if (!focused.value) markdown.value = value ?? '' })
+watch(focused, (value) => { if (props.editable) emit('editing', value) })
 
 const toolbar: EditorToolbarItem[][] = [
   [
@@ -59,7 +62,10 @@ function onFocusOut(event: FocusEvent) {
 
 <template>
   <section class="space-y-2" aria-labelledby="description-heading">
-    <h3 id="description-heading" class="text-section text-highlighted">Description</h3>
+    <div class="flex items-baseline gap-3">
+      <h3 id="description-heading" class="text-section text-highlighted">Description</h3>
+      <p v-if="marker" class="text-xs text-warning" aria-live="polite" data-testid="description-marker">{{ marker }}</p>
+    </div>
     <div
       class="rounded-card border bg-default transition-colors"
       :class="editable ? 'border-default focus-within:border-primary hover:border-accented' : 'border-transparent'"

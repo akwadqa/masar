@@ -20,6 +20,12 @@ def members(space: str):
 
 
 @frappe.whitelist(methods=["GET"])
+def people(users):
+	"""Masar user. Names of people the caller shares a Space with, for presence (specs/realtime.md)."""
+	return space_service.people(frappe.parse_json(users) if isinstance(users, str) else users or [])
+
+
+@frappe.whitelist(methods=["GET"])
 def categories():
 	"""Masar user. The shared Space category list (client revision 5)."""
 	return space_service.categories()

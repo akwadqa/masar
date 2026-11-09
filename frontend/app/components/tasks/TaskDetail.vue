@@ -17,6 +17,15 @@ const focusComment = computed(() => (typeof route.query.comment === 'string' ? r
 const toast = useToast()
 
 const editor = useTaskEditor(() => props.name)
+// Live updates (specs/realtime.md): the Task room brings other people's changes, typing and editing.
+// A refresh waits while this person is typing (queueRefresh), so it never replaces their text.
+useDocumentRoom('Masar Task', () => props.name)
+useRealtime().on('masar_timeline', (payload) => {
+  if (payload.task === props.name) queueRefresh([`task:${props.name}`, `attachments:${props.name}`])
+})
+const markers = useEditMarkers(() => props.name)
+const titleMarker = markers.marker('title')
+const descriptionMarker = markers.marker('description')
 const { task, status, error, refresh, editable, conflict, mutations } = editor
 const { data: members } = useSpaceMembers(() => task.value?.space ?? '')
 
@@ -39,6 +48,7 @@ watch(task, (value) => {
 
 function commitTitle() {
   editing.title = false
+  markers.stop('title')
   const value = title.value.replace(/\s+/g, ' ').trim()
   if (!task.value) return
   if (!value) {
@@ -152,11 +162,12 @@ async function deleteTask() {
             :disabled="!editable"
             maxlength="240"
             data-testid="task-title"
-            @focus="editing.title = true"
+            @focus="editing.title = true; markers.start('title')"
             @blur="commitTitle"
             @keydown.enter.prevent="($event.target as HTMLTextAreaElement).blur()"
             @keydown.esc="title = task.title; ($event.target as HTMLTextAreaElement).blur()"
           />
+          <p v-if="titleMarker" class="-mt-3 text-xs text-warning" aria-live="polite" data-testid="title-marker">{{ titleMarker }}</p>
           <TaskPropertyChips :task="task" :editor="editor" @finished="emit('finished')" />
           <TaskPeoplePicker
             :assignees="task.assignees"
@@ -169,7 +180,13 @@ async function deleteTask() {
           />
         </div>
 
-        <TaskDescription :value="task.description" :editable="editable" @save="(markdown) => editor.save({ description: markdown })" />
+        <TaskDescription
+          :value="task.description"
+          :editable="editable"
+          :marker="descriptionMarker"
+          @save="(markdown) => editor.save({ description: markdown })"
+          @editing="(active) => (active ? markers.start('description') : markers.stop('description'))"
+        />
 
         <TaskActions :task="task.name" :editable="editable" />
 

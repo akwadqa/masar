@@ -29,3 +29,6 @@ def record_activity(doc, event: str, data: dict | None = None, space: str | None
 	realtime_service.space_changed(entry_space)
 	if doc.doctype == "Masar Batch":
 		realtime_service.batch_changed(doc.name)
+	elif doc.doctype == "Masar Task":
+		# Comments, files, time and field changes all record Task history: open Tasks refresh.
+		realtime_service.task_changed(doc.name)

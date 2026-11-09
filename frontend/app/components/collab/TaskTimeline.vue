@@ -20,6 +20,9 @@ watch(() => props.focusComment, (value) => {
   if (view.value !== 'all' && view.value !== 'comments') view.value = 'all'
 })
 const timeline = useTimeline(() => props.task, view)
+// "Lina is typing…" (specs/realtime.md, phase 5); the Task room is joined by Task details.
+const typingSignal = useTypingSignal(() => props.task)
+const typingSentence = typingSignal.sentence
 const highlighted = ref<string | null>(null)
 
 // Deep link: once the timeline has loaded, bring the comment into view and mark it, once.
@@ -72,7 +75,8 @@ function onSaved(comment: TaskComment) {
       <UTabs :model-value="view" :items="views" :content="false" size="xs" variant="pill" class="ms-auto" :ui="{ trigger: 'data-[state=inactive]:text-toned' }" @update:model-value="setView" />
     </div>
 
-    <CommentComposer v-if="canComment && view !== 'history' && view !== 'worklog'" :task="task" @saved="onSaved" />
+    <CommentComposer v-if="canComment && view !== 'history' && view !== 'worklog'" :task="task" @saved="onSaved" @typing="typingSignal.typing" />
+    <p v-if="typingSentence && view !== 'history' && view !== 'worklog'" class="text-xs text-muted" aria-live="polite" data-testid="typing">{{ typingSentence }}</p>
     <p v-else-if="!canComment && view !== 'history'" class="text-xs text-muted">This task is read-only for you in this Space.</p>
 
     <div v-if="timeline.status.value === 'pending' && !timeline.items.value.length" class="space-y-2">

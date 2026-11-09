@@ -1,4 +1,5 @@
 import frappe
+from frappe.rate_limiter import rate_limit
 from frappe.utils import sbool
 
 from masar.services import comment_service, timeline_service
@@ -44,3 +45,12 @@ def delete(comment: str):
 @masar_write
 def react(comment: str, emoji: str, active=True):
 	return comment_service.react(comment, emoji, sbool(active))
+
+
+# The Workspace sends this at most every 3 s while typing; the limit only stops abuse.
+@frappe.whitelist(methods=["POST"])
+@rate_limit(key="task", limit=60, seconds=60)
+@masar_write
+def typing(task: str):
+	"""Masar member of the Task's Space. Shows "… is typing" to the Task's open viewers; writes nothing."""
+	return comment_service.typing(task)
