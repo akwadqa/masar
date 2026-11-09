@@ -152,6 +152,8 @@ def get_detail(space_name: str) -> dict:
 		"myRole": role,
 		"modified": str(doc.modified),
 		"permissions": space_capabilities(doc.name, doc.space_owner, doc.status),
+		# Tasks in any status: a Space can be deleted only when this is 0 (client decision 2026-11-03).
+		"taskCount": frappe.db.count("Masar Task", {"space": doc.name}),
 	}
 
 

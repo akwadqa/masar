@@ -21,6 +21,7 @@ MANAGER = "Manager"
 MEMBER = "Member"
 READ_PTYPES = {"read", "select", "print", "email", "report", "export"}
 SPACE_ADMIN_ROLES = {"System Manager", "Masar Admin"}
+PLANNER_ROLE = "Masar Planner"
 
 
 # --------------------------------------------------------------------------- membership
@@ -407,19 +408,27 @@ def has_full_scope(batch: str, user: str | None = None) -> bool:
 	return all(spaces.get(space) == MANAGER for space in batch_scope(batch))
 
 
+def is_planner(user: str | None = None) -> bool:
+	"""Batches are created, owned and planned only by Masar Planners who can use Masar (client
+	decision 2026-11-03, replacing "any Space Manager" of ADR-043)."""
+	user = user or frappe.session.user
+	return is_masar_user(user) and PLANNER_ROLE in frappe.get_roles(user)
+
+
 def can_manage_batch(batch_doc, user: str | None = None) -> bool:
-	"""Planning authority: the owner, while they are a Manager of every participating Space."""
+	"""Planning authority: the owner, while they are a Planner and a Manager of every participating
+	Space."""
 	user = user or frappe.session.user
 	return (
 		batch_doc.status != "Finished"
 		and batch_doc.batch_owner == user
-		and is_masar_user(user)
+		and is_planner(user)
 		and has_full_scope(batch_doc.name, user)
 	)
 
 
 def can_create_batches(user: str | None = None) -> bool:
-	return any(role == MANAGER for role in get_user_spaces(user).values())
+	return is_planner(user)
 
 
 def batch_has_permission(doc, ptype=None, user=None, debug=False) -> bool:

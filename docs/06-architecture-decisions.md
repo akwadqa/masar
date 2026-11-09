@@ -182,7 +182,7 @@ The Action stays visible in the parent's list, rendered as "Promoted → <Task t
 ## ADR-012 — Batch lifecycle and participation history {#adr-012}
 
 **Decision (decision C).** States Planned → Active → Completed (diagram in [02 §3.7](02-domain-data-model.md#37-masar-batch)). Multiple Active Batches allowed (Batches serve different cross-Space teams). A Task is in at most one Planned/Active Batch at a time (`Masar Task.batch`), with history in `Masar Batch Item`. Moving a Task between Batches closes the old item (`Removed`) and opens a new one. Finishing requires a destination for unfinished Tasks: another Planned/Active Batch (items marked `Carried Over`, new items opened) or no Batch (`Carried Over` with no successor). Completed Batches are immutable. Progress = completed/total over viewer-visible current items; historical metrics from item outcomes.
-**Authority (Q-02 default).** Any Masar User may create a Batch (becomes owner); edit/start/finish/delete by owner, `Masar Planner` or `Masar Admin`; adding a Task requires write capability on that Task.
+**Authority (Q-02 default).** Any Masar User may create a Batch (becomes owner); edit/start/finish/delete by owner, `Masar Planner` or `Masar Admin`; adding a Task requires write capability on that Task. *Superseded by ADR-043 as amended on 2026-11-03.*
 **Rejected.** Many-to-many current membership (contradicts sprint semantics, doubles progress counting); storing only `Task.batch` (loses history on carry-over).
 
 ## ADR-013 — Release scope and statuses {#adr-013}
@@ -468,23 +468,23 @@ Deleting a Feature or Release **never deletes Tasks**.
 
 ## ADR-043 — Batch scope, ownership and authority {#adr-043}
 
-**Status: Accepted (provisional default for Q-02).**
+**Status: Accepted (provisional default for Q-02). Amended by client decision 2026-11-03: Batches belong to Masar Planners.**
 
 **Scope and creation.**
 - A Batch is cross-Space and has no `space` field. Each Task keeps its single Space; joining a Batch never changes it, and Features and Releases stay Space-scoped.
-- Any user who is a **Manager of at least one Space** may create a Batch and becomes its `batch_owner`.
+- Only a **Masar Planner** may create a Batch and becomes its `batch_owner`. They need not manage any Space to create one (client decision 2026-11-03; until then any Manager of at least one Space could).
 
-**Planning authority.** Changing metadata, adding or removing Tasks, starting and finishing require that the user is the owner **and** a Manager of every Space with Tasks currently in the Batch (`has_full_scope`). Adding a Task also requires Manager write access to that Task's Space, so a new Space joins the scope only through someone who manages it. A Space Manager gains no authority over a Batch merely because their Space's Tasks are in it.
+**Planning authority.** Changing metadata, adding or removing Tasks, starting and finishing require that the user is the owner, holds `Masar Planner` (client decision 2026-11-03) **and** is a Manager of every Space with Tasks currently in the Batch (`has_full_scope`). An owner who loses the Planner role loses this authority until the role returns or the Batch moves to another Planner. Adding a Task also requires Manager write access to that Task's Space, so a new Space joins the scope only through someone who manages it. A Space Manager gains no authority over a Batch merely because their Space's Tasks are in it.
 
 **Members.** Members view and work on their own Tasks (completion, fields) under the existing rules. They cannot plan Batches.
 
 **Transfer and recovery.**
-- The owner may transfer the Batch to an active Space Manager who manages every Space in it. The candidate list comes from an authority-scoped endpoint.
-- If the owner loses that authority (role change, membership removal, disabled account), a user who manages every participating Space may **take over** the Batch.
+- The owner may transfer the Batch to an active Masar Planner who manages every Space in it (client decision 2026-11-03). The candidate list lists exactly those Planners (every active Planner for an empty Batch).
+- If the owner loses that authority (Space role change, membership removal, loss of the Planner role, disabled account), a Planner who manages every participating Space may **take over** the Batch.
 - Finished Batches are history and cannot be transferred.
 
-**No new roles.**
-- No global Planner role.
+**Roles.**
+- `Masar Planner` is required to own and plan Batches (client decision 2026-11-03; it was unused until then).
 - Masar administrators gain nothing over Batches.
 - The Frappe `Administrator` superuser remains outside contextual permissions (04 §1.1b).
 

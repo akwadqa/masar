@@ -12,7 +12,8 @@ import frappe
 # Isolated browser-test identities (Phase 8A data reset). They never join demonstration Spaces;
 # `remove_e2e_fixtures` deletes them together with everything they created.
 E2E_USERS = {
-	"qa.manager": ("E2E Manager", "Manager of E2E Alpha", ["Masar User"]),
+	# Only Masar Planners create Batches (client decision 2026-11-03): the identities that plan get it.
+	"qa.manager": ("E2E Manager", "Manager of E2E Alpha, Planner", ["Masar User", "Masar Planner"]),
 	"qa.member": ("E2E Member", "Member of E2E Alpha", ["Masar User"]),
 	"qa.outsider": ("E2E Outsider", "Member of E2E Beta only", ["Masar User"]),
 	"qa.admin": (
@@ -20,7 +21,11 @@ E2E_USERS = {
 		"Masar administrator (creates Spaces), no memberships",
 		["Masar User", "Masar Admin"],
 	),
-	"qa.spare": ("E2E Spare", "No memberships; added and removed by membership tests", ["Masar User"]),
+	"qa.spare": (
+		"E2E Spare",
+		"No memberships; added and removed by membership tests; Planner",
+		["Masar User", "Masar Planner"],
+	),
 	"qa.reset": ("E2E Reset", "Used only by the password-recovery test", ["Masar User"]),
 }
 DOMAIN = "masar-qa.invalid"

@@ -38,7 +38,7 @@ async function submit() {
 </script>
 
 <template>
-  <UModal v-model:open="open" title="Transfer Batch" description="The new owner must manage every Space whose tasks are in this Batch.">
+  <UModal v-model:open="open" title="Transfer Batch" description="The new owner must be a Masar Planner who manages every Space whose tasks are in this Batch.">
     <template #body>
       <div class="space-y-4">
         <UAlert v-if="error" color="error" variant="subtle" icon="i-lucide-circle-alert" :title="error" role="alert" />

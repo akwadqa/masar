@@ -4,7 +4,8 @@ import frappe
 # "Website User" (Frappe derives user_type from Role.desk_access) and /desk rejects them.
 # Company administrators receive Desk through standard Frappe roles such as System Manager.
 #   Masar User    - can use the Masar Workspace; content access is decided by Space membership
-#   Masar Planner - can edit, start and finish any Batch
+#   Masar Planner - creates Batches and plans, starts and finishes the ones they own, within the Spaces
+#                   they manage (client decision 2026-11-03)
 #   Masar Admin   - Masar application administrator: creates Spaces and manages membership
 MASAR_ROLES = ("Masar User", "Masar Planner", "Masar Admin")
 

@@ -105,7 +105,7 @@ const releaseItems = computed(() => [{ label: 'Any Release', value: 'any' }, { l
       </div>
     </div>
     <div class="relative min-h-0 flex-1">
-      <StatePanel v-if="!managed.length" icon="i-lucide-shield" title="You manage no open Space" description="Only Space Managers plan tasks into Batches." />
+      <StatePanel v-if="!managed.length" icon="i-lucide-shield" title="You manage no open Space" description="A Batch takes tasks only from Spaces its Planner manages." />
       <StatePanel v-else-if="loadError" tone="error" icon="i-lucide-cloud-off" title="Tasks could not be loaded" :description="loadError">
         <UButton label="Try again" @click="load()" />
       </StatePanel>

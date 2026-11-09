@@ -40,7 +40,7 @@ function onDrop(event: DragEvent) {
       Select Start Batch when you're ready.
     </p>
     <p v-else class="max-w-xl text-sm text-muted">
-      No Batch is planned yet. Space Managers create Batches and plan tasks into them.
+      No Batch is planned yet. Masar Planners create Batches and plan tasks into them.
     </p>
     <UButton v-if="canCreate" icon="i-lucide-plus" label="Create Batch" @click="emit('create')" />
   </section>

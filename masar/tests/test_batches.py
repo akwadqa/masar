@@ -2,6 +2,8 @@
 Covers the directive's security matrix A–O with real authorization (no mocks except simulated
 transient database errors)."""
 
+from contextlib import contextmanager
+
 import frappe
 import frappe.client
 from frappe.tests import IntegrationTestCase
@@ -21,6 +23,18 @@ def _task(space, title):
 
 def _key():
 	return f"req-{frappe.generate_hash(length=16)}"
+
+
+@contextmanager
+def _without_planner_role(user_key):
+	"""Take Masar Planner from a user for one test; restores it on exit."""
+	frappe.set_user("Administrator")
+	frappe.get_doc("User", email(user_key)).remove_roles("Masar Planner")
+	try:
+		yield
+	finally:
+		frappe.set_user("Administrator")
+		frappe.get_doc("User", email(user_key)).add_roles("Masar Planner")
 
 
 def _set_role(space, user_key, role):
@@ -68,7 +82,7 @@ class TestBatchBasics(BatchCase):
 		with self.assertRaises(frappe.ValidationError):
 			batches.create_batch("Backwards", "2026-11-10", end_date="2026-11-09")
 
-	def test_only_space_managers_create_and_creation_is_idempotent(self):
+	def test_only_planners_create_and_creation_is_idempotent(self):
 		key = _key()
 		first = batches.create_batch("Idempotent", "2026-11-02", preset="one_week", client_request_id=key)
 		again = batches.create_batch("Idempotent", "2026-11-02", preset="one_week", client_request_id=key)
@@ -77,10 +91,53 @@ class TestBatchBasics(BatchCase):
 		self.assertEqual(frappe.db.count("Masar Batch", {"client_request_id": key}), 1)
 		with self.assertRaises(frappe.ValidationError):  # same key, different Batch
 			batches.create_batch("Other", "2026-11-02", preset="one_week", client_request_id=key)
-		for user in ("a_member", "outsider"):
+		# b_member manages Space B but is no Planner (client decision 2026-11-03).
+		for user in ("a_member", "outsider", "b_member", "admin"):
 			as_user(user)
-			with self.assertRaises(frappe.PermissionError):
+			with self.subTest(user=user), self.assertRaises(frappe.PermissionError):
 				batches.create_batch("Nope", "2026-11-02", preset="one_week")
+			self.assertFalse(batches.list_batches()["permissions"]["canCreate"])
+
+	def test_a_planner_without_spaces_creates_but_plans_only_spaces_they_manage(self):
+		as_user("planner")
+		self.assertTrue(batches.list_batches()["permissions"]["canCreate"])
+		batch = self._batch("Planner's")
+		detail = batches.get_batch(batch)
+		self.assertTrue(detail["isOwner"] and detail["canManage"])
+		as_user("a_manager")
+		a_task = _task(self.world["A"], "Not theirs")
+		as_user("planner")
+		with self.assertRaises((frappe.PermissionError, frappe.DoesNotExistError)):
+			batches.move_tasks([a_task], batch)
+		self.assertFalse(frappe.db.exists("Masar Batch Item", {"task": a_task}))
+
+	def test_an_owner_who_loses_the_planner_role_cannot_plan(self):
+		batch, *_ = self._planned_batch_with(a=1, c=0)
+		with _without_planner_role("a_manager"):
+			as_user("a_manager")
+			detail = batches.get_batch(batch)
+			self.assertTrue(detail["ownerLacksPlannerRole"])
+			self.assertFalse(detail["canManage"])
+			for call in (
+				lambda: batches.start_batch(batch),
+				lambda: batches.update_batch(batch, {"batchName": "x"}),
+				lambda: batches.move_tasks([_task(self.world["A"], "late")], batch),
+			):
+				with self.assertRaises(frappe.PermissionError):
+					call()
+			# A Planner who manages every Space in it may take it over.
+			frappe.set_user("Administrator")
+			_set_role(self.world["A"], "ab_member", "Manager")
+			try:
+				as_user("ab_member")
+				self.assertTrue(batches.get_batch(batch)["canClaim"])
+				claimed = batches.transfer_ownership(batch, email("ab_member"))
+				self.assertTrue(claimed["isOwner"] and claimed["canManage"])
+			finally:
+				frappe.set_user("Administrator")
+				_set_role(self.world["A"], "ab_member", "Member")
+		as_user("a_manager")
+		self.assertFalse(batches.get_batch(batch)["ownerLacksPlannerRole"])
 
 	def test_cross_space_planning_keeps_each_task_in_its_space(self):
 		batch, tasks_a, tasks_c = self._planned_batch_with()
@@ -246,9 +303,25 @@ class TestBatchAuthority(BatchCase):
 		batches.move_tasks([_task(space, "shared")], batch)
 		with self.assertRaises(frappe.ValidationError):  # new owner must manage every Space in it
 			batches.transfer_ownership(batch, email("outsider"))
+		# A Manager of every Space in it, without the Planner role, can neither receive nor claim it.
+		frappe.set_user("Administrator")
+		doc = frappe.get_doc("Masar Space", space)
+		doc.append("members", {"user": email("b_member"), "role": "Manager"})
+		doc.save(ignore_permissions=True)
+		clear_membership_cache()
+		as_user("a_manager")
+		self.assertEqual(
+			{u["name"] for u in batches.owner_candidates(batch)}, {email("ab_member")}
+		)  # Planners with full scope only
+		with self.assertRaises(frappe.ValidationError):
+			batches.transfer_ownership(batch, email("b_member"))
 		# The owner loses authority: a full-scope Manager may claim the Batch.
 		frappe.set_user("Administrator")
 		_set_role(space, "a_manager", "Member")
+		as_user("b_member")
+		self.assertFalse(batches.get_batch(batch)["canClaim"])
+		with self.assertRaises(frappe.PermissionError):
+			batches.transfer_ownership(batch, email("b_member"))
 		as_user("ab_member")
 		self.assertTrue(batches.get_batch(batch)["canClaim"])
 		claimed = batches.transfer_ownership(batch, email("ab_member"), expected_owner=email("a_manager"))

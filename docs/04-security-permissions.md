@@ -13,7 +13,7 @@ Framework facts below are marked **VERIFIED** (read in Frappe `version-16` sourc
 | Role | Purpose |
 |---|---|
 | `Masar User` | Gate to the application. Every Masar user has it. Grants DocType-level permissions; row-level access is then decided by Space membership. |
-| `Masar Planner` | May start/finish/edit any Batch (Q-02 default). |
+| `Masar Planner` | The only role that creates Batches. A Planner plans, starts and finishes the Batches they own while they manage every Space whose Tasks are in it; they need not manage any Space to create one (client decision 2026-11-03, ADR-043). Needs `Masar User` as well. |
 | `Masar Admin` | Application administrator: create Spaces (Q-05 default), recover Spaces without Managers, see overall Batch metrics. Not a bypass for task content of Spaces they are not members of, unless also a member (PROPOSED — keeps the "Space access determines visibility" rule absolute; Q-08). |
 | `System Manager` | Frappe site administration (users, email, backups). Not used for daily work. |
 
@@ -73,8 +73,8 @@ Defaults are PROPOSED unless noted; business-level items flagged with their appr
 | Edit / delete own time entries | ✓ | ✓ | |
 | Edit / delete others' time entries | — | ✓ | |
 | Add own-Space Tasks to a Batch / move between Batches | ✓ | ✓ | Requires Task write access (Q-02) |
-| Create Batch | ✓ (any Masar User) | ✓ | Becomes `batch_owner` (Q-02) |
-| Edit / start / finish / delete Batch | owner | owner | + `Masar Planner`, `Masar Admin` |
+| Create Batch | — | — | `Masar Planner` only; becomes `batch_owner` (client decision 2026-11-03) |
+| Edit / start / finish / delete Batch | — | — | The owner, while a `Masar Planner` and a Manager of every participating Space (ADR-043) |
 
 ## 3. Enforcement architecture
 
@@ -154,7 +154,7 @@ Detailed in [03 §4](03-system-architecture.md#4-authentication-and-session). Ke
 
 > **Implemented (Phase 5, 2026-10-28).** §5.1 to §5.3 below are the Phase 0 proposal. The implementation is more restrictive (ADR-043, ADR-045, ADR-049):
 > - **Metadata is not visible to all Masar users.** A Batch is visible only to its owner and to members of a Space that has or had Tasks in it.
-> - **Authority:** only the owner who manages **every** participating Space can plan, start or finish a Batch. There is no `Masar Planner` role, and no Masar-administrator overall summary.
+> - **Authority:** only the owner, while a `Masar Planner` who manages **every** participating Space, can plan, start or finish a Batch (client decision 2026-11-03). There is no Masar-administrator overall summary.
 > - **Finishing:** whoever finishes therefore sees the whole Batch. The destination for unfinished Tasks must be a **Planned** Batch; Active is not allowed.
 > - **Generic APIs:** request ids and the finish destination are hidden from generic document reads.
 
