@@ -30,11 +30,15 @@ const open = computed({
 const body = ref<HTMLElement | null>(null)
 useEdgeSwipe(() => body.value?.closest<HTMLElement>('[role="dialog"]'), () => emit('close'), () => open.value)
 
-// A click on another Task row switches the panel to that Task instead of closing it first: closing goes
-// back in history (useTaskPanel), which would undo the switch.
-function keepOpenForRows(event: Event) {
+// The panel stays open when:
+// - a click lands on another Task row: it switches the panel to that Task, while closing would go back in
+//   history (useTaskPanel) and undo the switch;
+// - focus moves to an element that is no longer on the page. After a delete, the confirm dialog hands focus
+//   back to the deleted Task's trash button while the panel already shows the next Task; that is not the
+//   person leaving the panel.
+function keepOpen(event: Event) {
   const target = (event as CustomEvent<{ originalEvent?: Event }>).detail?.originalEvent?.target ?? event.target
-  if (target instanceof Element && target.closest('[data-task]')) event.preventDefault()
+  if (target instanceof Element && (!target.isConnected || target.closest('[data-task]'))) event.preventDefault()
 }
 </script>
 
@@ -46,7 +50,7 @@ function keepOpenForRows(event: Event) {
     :overlay="false"
     title="Task details"
     :close="false"
-    :content="{ onInteractOutside: keepOpenForRows }"
+    :content="{ onInteractOutside: keepOpen }"
     :ui="{ content: 'w-full sm:max-w-3xl pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]', header: 'sr-only', body: 'p-0 sm:p-0' }"
   >
     <template #body>

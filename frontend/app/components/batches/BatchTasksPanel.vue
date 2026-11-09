@@ -9,6 +9,8 @@ const filters = computed(() => ({ q: q.value.trim() || null }))
 const { data: tasks, status, error, refresh } = useBatchTasks(() => props.batch.name, filters)
 const controller = useTaskListController(tasks)
 const { activeTask, openTask: showTask, closeTask } = useTaskPanel()
+// The rows as shown, for the panel's "open the next Task" (client request 2026-11-02).
+const panelOrder = computed(() => tasks.value?.map(task => task.name) ?? [])
 defineShortcuts({ escape: () => { if (controller.selected.value.size && !activeTask.value) controller.clearSelection() } })
 </script>
 
@@ -50,6 +52,6 @@ defineShortcuts({ escape: () => { if (controller.selected.value.size && !activeT
         @action-done="controller.setActionDone"
       />
     </div>
-    <TaskPanel :task-name="activeTask" @close="closeTask" />
+    <TaskPanel :task-name="activeTask" :order="panelOrder" @open="showTask" @close="closeTask" />
   </div>
 </template>

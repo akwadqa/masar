@@ -15,6 +15,8 @@ const today = new Intl.DateTimeFormat('en-GB', { weekday: 'long', day: 'numeric'
 function openTask(task: TaskListRow) {
   showTask(task.name)
 }
+// The rows as shown, for the panel's "open the next Task" (client request 2026-11-02).
+const panelOrder = computed(() => tasks.value?.map(task => task.name) ?? [])
 </script>
 
 <template>
@@ -72,7 +74,7 @@ function openTask(task: TaskListRow) {
             @action-done="controller.setActionDone"
           />
         </div>
-        <TaskPanel :task-name="activeTask" @close="closeTask" />
+        <TaskPanel :task-name="activeTask" :order="panelOrder" @open="showTask" @close="closeTask" />
       </div>
     </template>
   </UDashboardPanel>

@@ -20,6 +20,9 @@ const creating = ref(false)
 function openTask(task: TaskListRow) {
   showTask(task.name)
 }
+// The rows of the board as shown, for the panel's "open the next Task" (client request 2026-11-02).
+const board = ref<{ order: string[] } | null>(null)
+const panelOrder = computed(() => board.value?.order ?? [])
 const columns: TableColumn<Batch>[] = [
   { accessorKey: 'batchName', header: 'Batch' },
   { id: 'dates', header: 'Dates' },
@@ -61,6 +64,7 @@ const columns: TableColumn<Batch>[] = [
           </StatePanel>
           <BatchBoard
             v-else
+            ref="board"
             :tasks="tasks ?? []"
             :controller="controller"
             :active-task="activeTask"
@@ -90,7 +94,7 @@ const columns: TableColumn<Batch>[] = [
             </div>
           </section>
         </div>
-        <TaskPanel :task-name="activeTask" @close="closeTask" />
+        <TaskPanel :task-name="activeTask" :order="panelOrder" @open="showTask" @close="closeTask" />
       </div>
       <CreateBatchModal v-model:open="creating" @created="(name) => navigateTo(`/batches/${name}`)" />
     </template>
