@@ -21,6 +21,7 @@ from masar.masar.doctype.masar_batch.masar_batch import STATUSES
 from masar.permissions import (
 	CLOSED,
 	MANAGER,
+	PLANNER_ROLE,
 	batch_scope,
 	batch_visible,
 	can_create_batches,
@@ -28,6 +29,7 @@ from masar.permissions import (
 	get_space_status,
 	get_user_spaces,
 	has_full_scope,
+	is_planner,
 	not_found,
 	require_masar_user,
 	require_task_write,
@@ -272,6 +274,8 @@ def _detail(doc) -> dict:
 			"ownerLacksAuthority": (not has_full_scope(doc.name))
 			if is_owner and doc.status != "Finished"
 			else False,
+			# The owner without the Masar Planner role can no longer plan it (client decision 2026-11-03).
+			"ownerLacksPlannerRole": (not is_planner()) if is_owner and doc.status != "Finished" else False,
 			"canClaim": _can_claim(doc),
 		}
 	)
@@ -386,10 +390,11 @@ def create_batch(
 	preset: str | None = None,
 	client_request_id: str | None = None,
 ) -> dict:
-	"""Any Space Manager may create a Batch and becomes its owner. Idempotent per request id."""
+	"""A Masar Planner creates a Batch and becomes its owner; they need not manage any Space yet
+	(client decision 2026-11-03). Idempotent per request id."""
 	require_masar_user()
 	if not can_create_batches():
-		frappe.throw(_("Only Space Managers can create Batches."), frappe.PermissionError)
+		frappe.throw(_("Only Masar Planners can create Batches."), frappe.PermissionError)
 	key = _request_id(client_request_id)
 	if not start_date:
 		frappe.throw(_("A Batch needs a start date."))
@@ -495,22 +500,26 @@ def delete_batch(batch: str) -> dict:
 
 
 def _can_claim(doc) -> bool:
-	"""Recovery: when the owner no longer manages every participating Space, a user who does (and who
-	can see the Batch) may take it over. Scope must be non-empty; finished Batches are history."""
+	"""Recovery: when the owner lost their authority (no longer manages every participating Space, lost
+	the Masar Planner role or was disabled), a Planner who manages every participating Space (and who can
+	see the Batch) may take it over. Scope must be non-empty; finished Batches are history."""
 	user = frappe.session.user
 	if doc.status == "Finished" or doc.batch_owner == user:
 		return False
 	scope = batch_scope(doc.name)
-	if not scope or not has_full_scope(doc.name, user):
+	if not scope or not is_planner(user) or not has_full_scope(doc.name, user):
 		return False
-	return not has_full_scope(doc.name, doc.batch_owner) or not frappe.db.get_value(
-		"User", doc.batch_owner, "enabled"
+	owner = doc.batch_owner
+	return (
+		not has_full_scope(doc.name, owner)
+		or not is_planner(owner)
+		or not frappe.db.get_value("User", owner, "enabled")
 	)
 
 
 def transfer_ownership(batch: str, new_owner: str, expected_owner: str | None = None) -> dict:
-	"""The owner hands the Batch to a Manager of every participating Space; or, if the owner lost that
-	authority, such a Manager claims it (`new_owner` = themselves). No global Planner role (ADR-043)."""
+	"""The owner hands the Batch to a Planner who manages every participating Space; or, if the owner lost
+	that authority, such a Planner claims it (`new_owner` = themselves). Client decision 2026-11-03."""
 	doc = _visible_batch(batch)
 	doc = frappe.get_doc("Masar Batch", batch, for_update=True)
 	if doc.status == "Finished":
@@ -524,11 +533,8 @@ def transfer_ownership(batch: str, new_owner: str, expected_owner: str | None = 
 	claiming = new_owner == user and _can_claim(doc)
 	if not claiming and not can_manage_batch(doc):
 		frappe.throw(_("Only the Batch owner can transfer it."), frappe.PermissionError)
-	spaces = get_user_spaces(new_owner)
-	if not frappe.db.get_value("User", new_owner, "enabled") or not any(
-		r == MANAGER for r in spaces.values()
-	):
-		frappe.throw(_("The new owner must be an active Space Manager."))
+	if not frappe.db.get_value("User", new_owner, "enabled") or not is_planner(new_owner):
+		frappe.throw(_("The new owner must be an active Masar Planner."))
 	if not has_full_scope(doc.name, new_owner):
 		frappe.throw(_("The new owner must manage every Space whose tasks are in this Batch."))
 	previous = doc.batch_owner
@@ -540,29 +546,33 @@ def transfer_ownership(batch: str, new_owner: str, expected_owner: str | None = 
 
 
 def owner_candidates(batch: str) -> list[dict]:
-	"""Possible new owners: active Managers of every Space whose Tasks are in the Batch (for an empty
-	Batch: Managers of the caller's Spaces). Only the managing owner may ask; the names returned are
-	members of Spaces the caller already manages."""
+	"""Possible new owners: active Masar Planners who manage every Space whose Tasks are in the Batch
+	(for an empty Batch: every active Planner). Only the managing owner, a Planner, may ask; Planners are
+	a small company-wide role, so their names are not Space content (client decision 2026-11-03)."""
 	doc = _managed_batch(batch, lock=False)
-	scope = batch_scope(doc.name) or {s for s, role in get_user_spaces().items() if role == MANAGER}
-	member = frappe.qb.DocType("Masar Space Member")
-	user = frappe.qb.DocType("User")
-	rows = (
-		frappe.qb.from_(member)
-		.join(user)
-		.on(user.name == member.user)
-		.select(member.user, member.parent)
-		.where(member.parent.isin(list(scope)) & (member.role == MANAGER) & (user.enabled == 1))
-		.where(member.parenttype == "Masar Space")
-		.run()
-	)
-	spaces_of: dict[str, set] = {}
-	for name, space in rows:
-		spaces_of.setdefault(name, set()).add(space)
-	required = batch_scope(doc.name)
-	names = [u for u, spaces in spaces_of.items() if spaces >= required and u != doc.batch_owner]
+	names = [
+		name
+		for name in _active_planners()
+		if name != doc.batch_owner and is_planner(name) and has_full_scope(doc.name, name)
+	]
 	refs = user_refs(names)
 	return sorted((refs[n] for n in names), key=lambda r: r["fullName"].casefold())
+
+
+def _active_planners() -> list[str]:
+	user = frappe.qb.DocType("User")
+	has_role = frappe.qb.DocType("Has Role")
+	rows = (
+		frappe.qb.from_(user)
+		.join(has_role)
+		.on((has_role.parent == user.name) & (has_role.parenttype == "User"))
+		.select(user.name)
+		.distinct()
+		.where((user.enabled == 1) & (has_role.role == PLANNER_ROLE))
+		.where(user.name.notin(["Administrator", "Guest"]))
+		.run()
+	)
+	return [name for (name,) in rows]
 
 
 # --------------------------------------------------------------------------- membership

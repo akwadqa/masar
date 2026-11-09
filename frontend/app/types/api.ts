@@ -71,7 +71,7 @@ export interface SpacePermissions {
   canManageMembers: boolean
   canChangeStatus: boolean
   canTransferOwnership: boolean
-  /** Space owner or Masar administrator: deletes the Space and everything in it */
+  /** Space owner or Masar administrator: deletes the Space once it has no tasks (`taskCount` 0) */
   canDelete: boolean
   /** Space files: members read them, Space Managers add and remove them */
   canViewFiles: boolean
@@ -96,6 +96,8 @@ export interface SpaceDetail {
   myRole: SpaceRole | null
   modified: string
   permissions: SpacePermissions
+  /** Tasks in any status; the Space can be deleted only at 0 (client decision 2026-11-03) */
+  taskCount: number
 }
 
 export interface EditableSpaceFields {
@@ -318,6 +320,8 @@ export interface BatchDetail extends Batch {
   finishDestination: { name: string, batchName: string } | null
   ownerLacksAccess: boolean
   ownerLacksAuthority: boolean
+  /** The owner no longer has the Masar Planner role, so they cannot plan this Batch */
+  ownerLacksPlannerRole: boolean
   canClaim: boolean
 }
 

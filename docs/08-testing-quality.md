@@ -21,7 +21,7 @@ Tests must be real: no skipped assertions, no mocked permission layer in permiss
 
 ## 2. Fixtures
 
-`masar/tests/fixtures.py` builds a deterministic world: Spaces **A** and **B**; users `a.manager`, `a.member`, `b.member`, `ab.member` (Member in both), `planner` (Masar Planner, member of A only), `admin` (Masar Admin, no memberships); Features/Releases/Labels per Space; Batch **X** containing tasks from A and B. Every permission test runs against this world.
+`masar/tests/fixtures.py` builds a deterministic world: Spaces **A** and **B**; users `a.manager`, `a.member`, `b.member`, `ab.member` (Member in both), `planner` (Masar Planner, no Space; `a_manager` and `ab_member` also hold Masar Planner, `b_member` manages B without it), `admin` (Masar Admin, no memberships); Features/Releases/Labels per Space; Batch **X** containing tasks from A and B. Every permission test runs against this world.
 
 ## 3. Regression priorities
 

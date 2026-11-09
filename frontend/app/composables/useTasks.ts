@@ -346,7 +346,8 @@ export function useTaskMutations() {
       optimistic: vars => updateCachedQueries<TaskListRow[]>('tasks:', rows =>
         rows.filter(row => row.name !== vars.task.name)
       ),
-      invalidate: () => ['tasks:', 'spaces:list']
+      // The Space's task count decides whether it can be deleted (client decision 2026-11-03).
+      invalidate: (_result, vars) => ['tasks:', 'spaces:list', `space:${vars.task.space}`]
     }
   )
 

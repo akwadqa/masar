@@ -92,7 +92,7 @@ Field types use Frappe fieldtypes. "Req" = mandatory. "RO" = read-only to client
 - I-SPACE-5: every member user has the global role `Masar User` and is enabled.
 
 **Indexes:** child table `(user, parent)` index on `tabMasar Space Member` for permission subqueries.
-**Deletion (client decision 2026-10-31, replaces "retire with `status` only"):** the Space owner or a Masar administrator may delete a Space from Space settings after typing its title (`masar.api.spaces.delete`). Everything in it is deleted in one transaction: Tasks (with their full Task cascade), Features, Releases, Labels, Space files, Batch Items, Activity, notifications, My Day rows, comments, time entries and timer sessions. Batches span Spaces and stay. Retiring with `status` remains the non-destructive option.
+**Deletion (client decision 2026-11-03, replaces the cascade of 2026-10-31):** the Space owner or a Masar administrator may delete a Space from Space settings after typing its title (`masar.api.spaces.delete`), but **only when it has no Tasks** in any status; its Tasks are deleted first, one by one. Its remaining content is deleted in the same transaction: Features, Releases, Labels, Space files, Batch Items, Activity and notifications. Batches span Spaces and stay. Retiring with `status` remains the non-destructive option.
 **Audit:** `track_changes` on; membership changes additionally written as `Masar Activity` with `reference_doctype = Masar Space`.
 
 #### Masar Space Member (child table)
@@ -284,7 +284,7 @@ No `space` field — Batches are intentionally cross-Space. Visibility rules: [0
 ```mermaid
 stateDiagram-v2
     [*] --> Planned : create (owner = creator)
-    Planned --> Active : start (owner / Masar Planner / Masar Admin)
+    Planned --> Active : start (owner, a Masar Planner managing every participating Space)
     Active --> Completed : finish (choose destination for unfinished Tasks)
     Planned --> [*] : delete (only if no items)
     Completed --> [*]

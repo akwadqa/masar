@@ -4,6 +4,9 @@ Spaces A and B. Users:
   a_manager  Manager of A          a_member  Member of A
   b_member   Manager of B          ab_member Member of A and B
   outsider   Masar User, no Space  admin     Masar Admin, no Space
+  planner    Masar Planner, no Space
+Masar Planner (client decision 2026-11-03: only Planners create and plan Batches) is also held by
+a_manager and ab_member; b_member is a Space Manager without it.
 """
 
 import frappe
@@ -12,12 +15,13 @@ from masar.permissions import clear_membership_cache
 
 DOMAIN = "masar-test.invalid"
 USERS = {
-	"a_manager": ["Masar User"],
+	"a_manager": ["Masar User", "Masar Planner"],
 	"a_member": ["Masar User"],
 	"b_member": ["Masar User"],
-	"ab_member": ["Masar User"],
+	"ab_member": ["Masar User", "Masar Planner"],
 	"outsider": ["Masar User"],
 	"admin": ["Masar User", "Masar Admin"],
+	"planner": ["Masar User", "Masar Planner"],
 	"no_role": [],
 	"desk_admin": ["System Manager"],
 }
@@ -40,6 +44,12 @@ def ensure_user(key: str, roles: list[str]) -> str:
 			}
 		)
 		user.insert(ignore_permissions=True)
+	else:
+		# Test sites keep users between runs: give existing ones roles added to the world later.
+		user = frappe.get_doc("User", name)
+		missing = set(roles) - {row.role for row in user.roles}
+		if missing:
+			user.add_roles(*sorted(missing))
 	return name
 
 

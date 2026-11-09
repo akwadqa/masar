@@ -170,13 +170,22 @@ const menuItems = computed(() => {
             <p v-if="editError" class="w-full text-sm text-error" role="alert">{{ editError }}</p>
           </form>
           <BatchSummary v-else :batch="batch" />
+          <!-- Only Masar Planners plan Batches (client decision 2026-11-03). -->
           <UAlert
-            v-if="batch.ownerLacksAccess || batch.ownerLacksAuthority"
+            v-if="batch.ownerLacksPlannerRole"
+            color="warning"
+            variant="subtle"
+            icon="i-lucide-shield-alert"
+            title="You no longer have the Masar Planner role"
+            description="Only Masar Planners plan, start and finish Batches. Ask an administrator for the role, or ask a Planner who manages every Space in this Batch to take it over."
+          />
+          <UAlert
+            v-else-if="batch.ownerLacksAccess || batch.ownerLacksAuthority"
             color="warning"
             variant="subtle"
             icon="i-lucide-shield-alert"
             title="You no longer manage every Space in this Batch"
-            description="Planning, starting and finishing need Manager access to every Space whose tasks are in it. Ask a Manager of all those Spaces to take it over."
+            description="Planning, starting and finishing need Manager access to every Space whose tasks are in it. Ask a Masar Planner who manages all those Spaces to take it over."
           />
           <UAlert
             v-if="batch.canClaim"
@@ -184,7 +193,7 @@ const menuItems = computed(() => {
             variant="subtle"
             icon="i-lucide-user-round-cog"
             title="This Batch's owner can no longer manage it"
-            description="You manage every Space in it, so you can take it over."
+            description="You are a Masar Planner and manage every Space in it, so you can take it over."
             :actions="[{ label: 'Take over this Batch', color: 'info', onClick: claim }]"
           />
         </section>

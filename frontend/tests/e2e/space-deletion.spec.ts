@@ -2,8 +2,8 @@ import { expect, test, type Browser, type Page } from '@playwright/test'
 import type { SpaceDetail, SpaceSummary, TaskDetail } from '../../app/types/api'
 import { USERS, pageApi, signIn, uniqueTitle } from './helpers'
 
-// Deleting a Space from its settings (client decision 2026-10-31): the owner or a Masar admin types
-// the title; the Space and its Tasks are gone for everyone.
+// Deleting a Space from its settings (client decision 2026-11-03, replacing the cascade of 2026-10-31):
+// only a Space without tasks can be deleted; the owner or a Masar admin types the title.
 test.describe.configure({ mode: 'serial' })
 
 const run = uniqueTitle('SD').replace(/\s+/g, '-')
@@ -24,7 +24,7 @@ async function createSpace(admin: Page, title: string) {
   return space
 }
 
-test('the owner deletes a Space with its Tasks after typing its title', async ({ browser }) => {
+test('a Space with tasks cannot be deleted; once emptied, the owner deletes it after typing its title', async ({ browser }) => {
   const admin = await asUser(browser, USERS.admin)
   const title = `${run} doomed`
   const space = await createSpace(admin, title)
@@ -33,6 +33,14 @@ test('the owner deletes a Space with its Tasks after typing its title', async ({
   const manager = await asUser(browser, USERS.manager)
   const task = (await api<{ task: TaskDetail }>(manager, 'masar.api.tasks.create', { space, title: `${run} task`, client_request_id: crypto.randomUUID() })).body.data.task.name
   await manager.goto(`/masar/spaces/${space}/settings`)
+  await expect(manager.getByTestId('delete-space-blocked')).toContainText('still has 1 task')
+  await expect(manager.getByRole('button', { name: 'Delete Space' })).toBeDisabled()
+  expect((await api(manager, 'masar.api.spaces.delete', { space, confirm_title: title })).status).toBe(417)
+  expect((await api(manager, 'masar.api.tasks.get', undefined, { task })).status).toBe(200)
+
+  expect((await api(manager, 'masar.api.tasks.delete', { task })).status).toBe(200)
+  await manager.reload()
+  await expect(manager.getByTestId('delete-space-blocked')).toHaveCount(0)
   await manager.getByRole('button', { name: 'Delete Space' }).click()
   const confirm = manager.getByRole('button', { name: 'Delete permanently' })
   await expect(confirm).toBeDisabled()

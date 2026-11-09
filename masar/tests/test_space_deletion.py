@@ -1,4 +1,5 @@
-"""Deleting a Space with all its content, and Tasks with their time logs (client decision 2026-10-31)."""
+"""Deleting an empty Space with its remaining content (client decision 2026-11-03, replacing the cascade
+of 2026-10-31), and Tasks with their time logs."""
 
 import frappe
 from frappe.tests import IntegrationTestCase
@@ -9,6 +10,7 @@ from masar.services import (
 	label_service,
 	planning_service,
 	space_deletion,
+	space_service,
 	task_service,
 	time_service,
 )
@@ -90,13 +92,38 @@ class TestSpaceDeletion(IntegrationTestCase):
 		other = unassigned_task(self.space, "Second", _key())
 		return [task, other]
 
-	def test_owner_deletes_the_space_and_everything_in_it(self):
+	def test_a_space_with_tasks_in_any_status_cannot_be_deleted(self):
+		tasks = self._fill()
+		task_service.set_completed(tasks[0], True)
+		self.assertEqual(space_service.get_detail(self.space)["taskCount"], 2)
+		with self.assertRaises(frappe.ValidationError):
+			space_deletion.delete_space(self.space, self.title)
+		task_service.delete(tasks[1])  # one Completed task still blocks
+		self.assertEqual(space_service.get_detail(self.space)["taskCount"], 1)
+		with self.assertRaises(frappe.ValidationError):
+			space_deletion.delete_space(self.space, self.title)
+		self.assertTrue(frappe.db.exists("Masar Space", self.space))
+		self.assertTrue(frappe.db.exists("Masar Task", tasks[0]))
+		self.assertTrue(frappe.db.exists("Masar Feature", {"space": self.space}))
+
+	def test_admin_is_refused_too_while_tasks_remain(self):
+		as_user("a_manager")
+		unassigned_task(self.space, "Blocking", _key())
+		as_user("admin")
+		with self.assertRaises(frappe.ValidationError):
+			space_deletion.delete_space(self.space, self.title)
+		self.assertTrue(frappe.db.exists("Masar Space", self.space))
+
+	def test_owner_deletes_an_emptied_space_with_its_remaining_content(self):
 		tasks = self._fill()
 		other_space_task = unassigned_task(self.world["A"], "Elsewhere", _key())
+		for task in tasks:
+			task_service.delete(task)
+		self.assertEqual(space_service.get_detail(self.space)["taskCount"], 0)
 
 		result = space_deletion.delete_space(self.space, self.title)
 
-		self.assertEqual(result["tasksDeleted"], 2)
+		self.assertEqual(result, {"name": self.space, "deleted": True})
 		self.assertFalse(frappe.db.exists("Masar Space", self.space))
 		self.assertEqual(_space_rows(self.space), {})
 		for task in tasks:
