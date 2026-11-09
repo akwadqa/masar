@@ -16,8 +16,8 @@ deferred to accepted.
 7. **Viewers are named across Spaces** (client decision 2026-11-09, after evaluation). Frappe's
    `doc_viewers` already sends viewer ids (e-mail addresses) to everyone in a room, so a Batch shared by
    several Spaces shows the real names of all its viewers instead of "Someone". Users without Masar
-   access are never named. Presence is a pill with a live dot and "viewing", so it is not mistaken for
-   member avatars.
+   access are never named. Presence shows compact avatars, each with a pulsing green "online" dot, so they
+   are not mistaken for member avatars; the names show on hover.
 
 ## Principles
 
