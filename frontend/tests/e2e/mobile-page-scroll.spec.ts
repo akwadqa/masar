@@ -68,7 +68,7 @@ test.beforeAll(async ({ browser }) => {
 })
 
 for (const [width, height] of [[375, 667], [390, 844], [430, 932]] as const) {
-  test(`installed iPhone app ${width}×${height}: composer fully visible; New task, typing, adding and leaving the field never move the shell`, async ({ browser }) => {
+  test(`installed iPhone app ${width}×${height}: composer fully visible; tapping the field, typing, adding and leaving the field never move the shell`, async ({ browser }) => {
     const page = await asUser(browser, { width, height }, `/masar/spaces/${space}/tasks`)
     await expect(list(page).locator('[data-task]').first()).toBeVisible()
     await standalone(page)
@@ -78,9 +78,9 @@ for (const [width, height] of [[375, 667], [390, 844], [430, 932]] as const) {
     expect(start.composerTop, 'the composer is fully on screen').toBeGreaterThanOrEqual(0)
     expect(start.composerBottom, 'and above the home indicator').toBeLessThanOrEqual(height - INSETS.bottom)
 
-    await page.getByRole('button', { name: /^New task/ }).click()
+    await composer(page).click()
     await expect(composer(page)).toBeFocused()
-    expect(await geometry(page), 'New task').toEqual(start)
+    expect(await geometry(page), 'tapping the new-task field').toEqual(start)
     await page.keyboard.type(`${run} typed in the app ${width}`)
     await page.keyboard.press('Enter')
     await expect(list(page).getByText(`${run} typed in the app ${width}`, { exact: true })).toBeVisible()
@@ -119,7 +119,7 @@ test('mobile browser 390×844 (no insets): the same stability, the composer at t
   await expect(list(page).locator('[data-task]').first()).toBeVisible()
   const start = await geometry(page)
   expect(start.composerBottom).toBe(844)
-  await page.getByRole('button', { name: /^New task/ }).click()
+  await composer(page).click()
   await page.keyboard.type(`${run} typed in Safari`)
   await page.keyboard.press('Enter')
   await composer(page).blur()
@@ -203,27 +203,14 @@ test('desktop is unchanged: the list scrolls by itself and adding a Task scrolls
   await page.context().close()
 })
 
-// New task button (client request 2026-10-30): the Plus icon alone on phones, unchanged from 640 px.
-for (const [width, height] of [[320, 568], [360, 640], [375, 667], [390, 844], [430, 932]] as const) {
-  test(`New task on a ${width}×${height} phone: icon only, 44 px, named, beside Features and Versions, opens the composer`, async ({ browser }) => {
+// No New task button on phones (client request 2026-11-09; it was an icon-only button since 2026-10-30):
+// the new-task field below the list adds Tasks there.
+for (const [width, height] of [[320, 568], [390, 844], [430, 932]] as const) {
+  test(`New task on a ${width}×${height} phone: no button, the new-task field is there`, async ({ browser }) => {
     const page = await asUser(browser, { width, height }, `/masar/spaces/${space}/tasks`)
-    const button = page.getByRole('button', { name: 'New task', exact: true })
-    await expect(button).toBeVisible()
-    const box = (await button.boundingBox())!
-    expect([Math.round(box.width), Math.round(box.height)]).toEqual([44, 44])
-    await expect(button.locator('[data-slot="label"]')).toBeHidden()
-    const icon = (await button.locator('[data-slot="leadingIcon"]').boundingBox())!
-    expect(Math.abs(icon.x + icon.width / 2 - (box.x + box.width / 2))).toBeLessThanOrEqual(1)
-    expect(Math.abs(icon.y + icon.height / 2 - (box.y + box.height / 2))).toBeLessThanOrEqual(1)
-    for (const name of ['Features panel', 'Versions panel']) {
-      const other = (await page.getByRole('button', { name, exact: true }).boundingBox())!
-      const apart = other.x + other.width <= box.x || other.x >= box.x + box.width || other.y + other.height <= box.y || other.y >= box.y + box.height
-      expect(apart, `${name} does not overlap`).toBe(true)
-    }
-    await expect(page.getByRole('tooltip')).toHaveCount(0)
-    await button.tap()
-    await expect(composer(page)).toBeFocused()
-    await expect(page.getByRole('tooltip')).toHaveCount(0)
+    await expect(list(page).locator('[data-task]').first()).toBeVisible()
+    await expect(page.getByRole('button', { name: /^New task/ })).toBeHidden()
+    await expect(composer(page)).toBeVisible()
     await page.context().close()
   })
 }
@@ -279,29 +266,6 @@ test('installed app: iOS draws its own solid status bar (default style); the vie
   const page = await asUser(browser, { width: 390, height: 844 }, '/masar/my-day')
   await expect(page.locator('meta[name="apple-mobile-web-app-status-bar-style"]')).toHaveAttribute('content', 'default')
   await expect(page.locator('meta[name="viewport"]')).toHaveAttribute('content', /viewport-fit=cover/)
-  await page.context().close()
-})
-
-test('the + button focuses the composer exactly like a tap on the field (a plain focus iOS moves above its keyboard)', async ({ browser }) => {
-  const page = await (await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true })).newPage()
-  await page.addInitScript(() => {
-    const w = window as unknown as { composerFocus: unknown[] }
-    w.composerFocus = []
-    const original = HTMLElement.prototype.focus
-    HTMLElement.prototype.focus = function (options?: FocusOptions) {
-      if (this.getAttribute('aria-label') === 'New task title') w.composerFocus.push(options ?? null)
-      return original.call(this, options)
-    }
-  })
-  await signIn(page, USERS.manager, undefined, `/masar/spaces/${space}/tasks`)
-  await expect(list(page).locator('[data-task]').first()).toBeVisible()
-  const before = await geometry(page)
-  await page.getByRole('button', { name: 'New task', exact: true }).tap()
-  await expect(composer(page)).toBeFocused()
-  const calls = await page.evaluate(() => (window as unknown as { composerFocus: Array<FocusOptions | null> }).composerFocus)
-  expect(calls.length).toBeGreaterThan(0)
-  expect(calls.every(options => !options?.preventScroll), `focus options: ${JSON.stringify(calls)}`).toBe(true)
-  expect(await geometry(page), 'and the page does not move in the browser').toEqual(before)
   await page.context().close()
 })
 
