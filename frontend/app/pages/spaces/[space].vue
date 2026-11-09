@@ -48,9 +48,12 @@ useHead(() => ({ title: space.value ? `${space.value.title} · Masar` : 'Masar' 
         <template #leading>
           <UDashboardSidebarCollapse />
         </template>
+        <!-- Other viewers sit right after the Space name (client feedback 2026-11-09). -->
+        <template #trailing>
+          <PresenceAvatars v-if="space" doctype="Masar Space" :name="space.name" />
+        </template>
         <template #right>
           <template v-if="space">
-            <PresenceAvatars doctype="Masar Space" :name="space.name" />
             <SpaceMemberStack v-if="space.members.length" :space="space" />
             <SpaceStatusBadge :status="space.status" size="sm" class="hidden sm:inline-flex" />
             <UBadge v-if="space.owner.name === useSession().user.value?.user" color="warning" variant="subtle" icon="i-lucide-crown" label="Owner" />

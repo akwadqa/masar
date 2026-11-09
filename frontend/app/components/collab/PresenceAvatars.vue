@@ -11,7 +11,7 @@ const label = computed(() => `Also viewing now: ${people.value.map(person => per
 
 <template>
   <UTooltip v-if="people.length" :text="label">
-    <div class="flex items-center gap-1 pe-1" role="img" :aria-label="label" data-testid="presence">
+    <div class="flex shrink-0 items-center gap-1 pe-1" role="img" :aria-label="label" data-testid="presence">
       <UChip
         v-for="person in people.slice(0, 3)"
         :key="person.name"
