@@ -55,6 +55,12 @@ const backlog = computed(() => props.tasks.filter(row => !row.batch))
 const showBacklog = computed(() => !props.batchFilter || props.batchFilter === 'none')
 const canCreate = computed(() => !!manageable.value?.permissions.canCreate)
 const showPlanZone = computed(() => !boxes.value.length && (!props.batchFilter || props.batchFilter === 'any'))
+// The Task rows top to bottom (Batch boxes, then the Backlog), so the side panel can open the next one.
+const order = computed(() => [
+  ...boxes.value.flatMap(box => box.tasks),
+  ...(showBacklog.value ? backlog.value : [])
+].map(row => row.name))
+defineExpose({ order })
 
 function startPlanning(names?: string[]) {
   pendingDrop.value = names ?? null

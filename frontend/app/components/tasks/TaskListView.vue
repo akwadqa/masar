@@ -51,6 +51,8 @@ const showDrafts = computed(() => (canCreate.value && filtersAdmitNewTask(filter
 function openTask(task: TaskListRow) {
   showTask(task.name)
 }
+// The rows as shown, for the panel's "open the next Task" (client request 2026-11-02).
+const panelOrder = computed(() => tasks.value?.map(task => task.name) ?? [])
 
 defineShortcuts({ escape: () => { if (controller.selected.value.size && !activeTask.value) controller.clearSelection() } })
 const listRef = ref<{ focusCreate: () => void } | null>(null)
@@ -227,6 +229,6 @@ watch(() => openPanels.value.join(), () => {
     <!-- The composer in page scroll (TaskList): sticky at the bottom of the screen, after the list at the end. -->
     <div ref="composerSlot" class="page-scroll:sticky page-scroll:bottom-0 page-scroll:z-10" />
 
-    <TaskPanel :task-name="activeTask" @close="closeTask" />
+    <TaskPanel :task-name="activeTask" :order="panelOrder" @open="showTask" @close="closeTask" />
   </div>
 </template>

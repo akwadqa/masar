@@ -1,6 +1,23 @@
 <script setup lang="ts">
-const props = defineProps<{ taskName: string | null }>()
-const emit = defineEmits<{ close: [] }>()
+import { nextTaskAfter } from '~/utils/taskNeighbours'
+
+// `order`: the Task names of the list behind the panel, as shown.
+const props = defineProps<{ taskName: string | null, order?: readonly string[] }>()
+const emit = defineEmits<{ close: [], open: [name: string] }>()
+
+// After the Task is deleted or set to Completed, Closed or Cancelled, the panel opens the next Task of the
+// list instead of closing (client request 2026-11-02). The neighbour is remembered while the Task is
+// still listed: the list may already have dropped it (optimistic update, refetch) when the change lands.
+const nextTask = ref<string | null>(null)
+watch(() => [props.taskName, props.order] as const, ([name, order]) => {
+  if (!name) nextTask.value = null
+  else if (order?.includes(name)) nextTask.value = nextTaskAfter(order, name)
+}, { immediate: true })
+
+function moveOn(closeWithoutNext: boolean) {
+  if (nextTask.value) emit('open', nextTask.value)
+  else if (closeWithoutNext) emit('close')
+}
 
 const open = computed({
   get: () => !!props.taskName,
@@ -34,7 +51,7 @@ function keepOpenForRows(event: Event) {
   >
     <template #body>
       <div ref="body" class="contents">
-        <TaskDetail v-if="taskName" :key="taskName" :name="taskName" mode="panel" @deleted="emit('close')" @close="emit('close')" />
+        <TaskDetail v-if="taskName" :key="taskName" :name="taskName" mode="panel" @deleted="moveOn(true)" @finished="moveOn(false)" @close="emit('close')" />
       </div>
     </template>
   </USlideover>

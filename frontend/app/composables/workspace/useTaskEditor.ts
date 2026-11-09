@@ -16,16 +16,19 @@ export function useTaskEditor(name: MaybeRefOrGetter<string>) {
   const editable = computed(() => !!task.value?.permissions.canEdit)
   const conflict = ref<{ field: keyof EditableTaskFields, yours: unknown } | null>(null)
 
-  async function save(changes: Partial<EditableTaskFields>) {
-    if (!task.value) return
+  /** Resolves to whether the server accepted the changes. */
+  async function save(changes: Partial<EditableTaskFields>): Promise<boolean> {
+    if (!task.value) return false
     conflict.value = null
     try {
       await mutations.update.execute({ task: task.value, changes })
+      return true
     } catch (caught) {
-      if ((caught as MasarApiError).kind !== 'conflict') return
+      if ((caught as MasarApiError).kind !== 'conflict') return false
       const field = Object.keys(changes)[0] as keyof EditableTaskFields
       conflict.value = { field, yours: changes[field] }
       await refresh()
+      return false
     }
   }
 

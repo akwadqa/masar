@@ -10,7 +10,7 @@ import { transferFiles } from '~/utils/transferFiles'
 // always visible); the Markdown description; the time box (timer, logged and
 // remaining); Actions, attachments and activity; record details as a footer.
 const props = defineProps<{ name: string, mode: 'panel' | 'page' }>()
-const emit = defineEmits<{ deleted: [], close: [] }>()
+const emit = defineEmits<{ deleted: [], finished: [], close: [] }>()
 // Direct comment links: /tasks/<task>?comment=<id> (page) or ?task=<task>&comment=<id> (panel).
 const route = useRoute()
 const focusComment = computed(() => (typeof route.query.comment === 'string' ? route.query.comment : null))
@@ -157,7 +157,7 @@ async function deleteTask() {
             @keydown.enter.prevent="($event.target as HTMLTextAreaElement).blur()"
             @keydown.esc="title = task.title; ($event.target as HTMLTextAreaElement).blur()"
           />
-          <TaskPropertyChips :task="task" :editor="editor" />
+          <TaskPropertyChips :task="task" :editor="editor" @finished="emit('finished')" />
           <TaskPeoplePicker
             :assignees="task.assignees"
             :owner="task.taskOwner"

@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { parseDate, type CalendarDate } from '@internationalized/date'
 import type { DropdownMenuItem } from '@nuxt/ui'
-import type { TaskDetail } from '~/types/api'
-import { PRIORITIES } from '~/types/api'
+import type { TaskDetail, TaskStatus } from '~/types/api'
+import { FINISHED_STATUSES, PRIORITIES } from '~/types/api'
 import { formatDueDate } from '~/utils/format'
 import type { TaskEditor } from '~/composables/workspace/useTaskEditor'
 
@@ -10,7 +10,14 @@ import type { TaskEditor } from '~/composables/workspace/useTaskEditor'
 // popover. Feature and Release are icons in the Task header; Batches are planned only by dragging
 // on the planning board, so a Batch is shown here as a read-only link (client revision 3).
 const props = defineProps<{ task: TaskDetail, editor: TaskEditor }>()
+// `finished`: the status was saved as Completed, Closed or Cancelled, so the side panel can move on to
+// the next Task (client request 2026-11-02).
+const emit = defineEmits<{ finished: [] }>()
 const editable = computed(() => props.editor.editable.value)
+
+async function setStatus(status: TaskStatus) {
+  if (await props.editor.save({ status }) && FINISHED_STATUSES.includes(status)) emit('finished')
+}
 
 const CHIP = 'rounded-pill'
 const chipUi = { base: `${CHIP} min-h-9`, trailingIcon: 'hidden' }
@@ -36,7 +43,7 @@ const overdue = computed(() => props.task.status === 'Overdue')
 
 <template>
   <div class="flex flex-wrap items-center gap-2" role="group" aria-label="Task properties">
-    <TaskStatusMenu :status="task.status" :title="task.title" :editable="editable" size="md" @change="(status) => editor.save({ status })" />
+    <TaskStatusMenu :status="task.status" :title="task.title" :editable="editable" size="md" @change="setStatus" />
     <UDropdownMenu :items="priorityItems" :disabled="!editable">
       <UButton color="neutral" variant="soft" size="md" :class="CHIP" :disabled="!editable" :aria-label="`Priority: ${task.priority}`">
         <TaskPriority :priority="task.priority" />
