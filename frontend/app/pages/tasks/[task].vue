@@ -8,7 +8,8 @@ useHead(() => ({ title: task.value ? `${task.value.title} · Masar` : 'Task · M
 <template>
   <UDashboardPanel :id="`task-${name}`" :ui="{ body: 'p-0 sm:p-0' }">
     <template #header>
-      <UDashboardNavbar :title="task?.title ?? 'Task'">
+      <!-- Phones hide the navbar title: the Task's buttons fill the bar, and the full title is right below. -->
+      <UDashboardNavbar :title="task?.title ?? 'Task'" :ui="{ title: 'max-sm:hidden' }">
         <template #leading>
           <UDashboardSidebarCollapse />
           <UButton
@@ -18,10 +19,17 @@ useHead(() => ({ title: task.value ? `${task.value.title} · Masar` : 'Task · M
             color="neutral"
             variant="ghost"
             size="sm"
+            class="min-w-0"
             :label="task.spaceTitle"
           />
         </template>
+        <!-- The Task's own top bar is not drawn on this page (client feedback 2026-11-10): the viewers sit
+             after the title, and TaskDetailHeader teleports its buttons into #task-page-actions. -->
+        <template #trailing>
+          <PresenceAvatars v-if="task" doctype="Masar Task" :name="task.name" />
+        </template>
         <template #right>
+          <div id="task-page-actions" class="flex items-center gap-1" />
           <NotificationBell placement="navbar" class="lg:hidden" />
         </template>
       </UDashboardNavbar>
