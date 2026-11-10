@@ -64,7 +64,7 @@ The Task panel (`USlideover`) opens over any list by adding `?task=:id` to the c
 
 ### 3.2 Spaces overview
 - **Purpose:** find and enter Spaces. **User:** everyone.
-- **Content:** `UCard` grid or compact list (toggle) with title, department, type, status badge, my role, open-task count, active Batch names. Search input + status filter (default *In Progress*; Q-06).
+- **Content:** `UCard` grid or compact list (toggle) with title, department, type, status badge, my role, open-task count, active Batch names. Search input + status filter (default *In Progress*; Q-06). Since 2026-11-10 each card also shows a Task progress bar (members only) and the page has an owner filter ([specs/space-progress.md](../specs/space-progress.md)).
 - **Actions:** open Space; *New Space* (Q-05 role only, `UModal` form).
 - **Empty:** "You're not a member of any Space yet." **Permission:** only the user's Spaces are returned by the server.
 

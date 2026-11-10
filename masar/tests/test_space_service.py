@@ -299,3 +299,39 @@ class TestDepartmentRetired(IntegrationTestCase):
 		as_user("a_manager")
 		with self.assertRaises(frappe.ValidationError):
 			space_service.update_details(created["name"], {"department": "App"})
+
+	# --- progress (client decision 2026-11-10) -----------------------------------------------
+
+	def _summary(self, name, scope="mine"):
+		return next(s for s in space_service.list_for_user(scope) if s["name"] == name)
+
+	def test_progress_counts_completed_and_closed_and_leaves_out_cancelled(self):
+		name = self._space(title="Progress Space")
+		as_user("a_manager")
+		statuses = ("Open", "Working", "Overdue", "Completed", "Closed", "Cancelled")
+		for index, status in enumerate(statuses):
+			task = unassigned_task(name, f"Progress {status}", f"progress-{name}-{index}")
+			if status == "Overdue":
+				frappe.db.set_value("Masar Task", task, "status", "Overdue")  # set only by the nightly job
+			elif status != "Open":
+				task_service.update(task, {"status": status})
+		summary = self._summary(name)
+		self.assertEqual(summary["progress"], {"total": 5, "completed": 2, "open": 3, "percent": 40})
+		self.assertEqual(summary["openTaskCount"], 3)
+
+	def test_progress_is_empty_without_countable_tasks(self):
+		name = self._space(title="Empty progress Space")
+		as_user("a_manager")
+		self.assertEqual(
+			self._summary(name)["progress"], {"total": 0, "completed": 0, "open": 0, "percent": None}
+		)
+		task = unassigned_task(name, "Only cancelled", f"progress-empty-{name}")
+		task_service.update(task, {"status": "Cancelled"})
+		self.assertIsNone(self._summary(name)["progress"]["percent"])
+
+	def test_progress_is_hidden_from_administrators_who_are_not_members(self):
+		name = self._space(title="Admin progress Space")
+		as_user("admin")
+		summary = self._summary(name, "all")
+		self.assertIsNone(summary["progress"])
+		self.assertIsNone(summary["openTaskCount"])

@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { SPACE_STATUSES, type SpaceStatus } from '~/types/api'
 import type { SpaceScope } from '~/composables/useSpaces'
+import { spaceOwners } from '~/utils/spaceOwners'
+import { avatarStyle } from '~/utils/userColor'
 
 useHead({ title: 'Spaces · Masar' })
 const route = useRoute()
@@ -27,10 +29,22 @@ const createOpen = ref(false)
 const sort = computed<'name' | 'created'>(() => (route.query.sort === 'created' ? 'created' : 'name'))
 const sortItems = [{ label: 'Name', value: 'name' }, { label: 'Creation date', value: 'created' }]
 
+// Owner filter (client request 2026-11-10), kept in the URL like the status filter.
+const owner = computed(() => (typeof route.query.owner === 'string' ? route.query.owner : 'all'))
+const ownerItems = computed(() => [
+  { label: 'All owners', value: 'all' },
+  ...spaceOwners(spaces.value ?? []).map(person => ({
+    label: person.fullName,
+    value: person.name,
+    avatar: { src: person.image ?? undefined, alt: person.fullName, class: person.image ? undefined : 'masar-avatar', style: person.image ? undefined : avatarStyle(person.name) }
+  }))
+])
+
 const filtered = computed(() => {
   const term = search.value.trim().toLowerCase()
   const matching = (spaces.value ?? []).filter(space =>
     (status.value === 'all' || space.status === status.value)
+    && (owner.value === 'all' || space.owner.name === owner.value)
     && (!term || [space.title, space.category ?? '', space.owner.fullName].some(v => v.toLowerCase().includes(term))))
   return sort.value === 'created' ? [...matching].sort((a, b) => Date.parse(b.creation) - Date.parse(a.creation)) : matching
 })
@@ -44,7 +58,7 @@ const statusItems = computed(() => [
   { label: `All statuses (${spaces.value?.length ?? 0})`, value: 'all' }
 ])
 const scopeItems = [{ label: 'My Spaces', value: 'mine' }, { label: 'All Spaces', value: 'all' }]
-const hasFilters = computed(() => status.value !== 'In Progress' || !!search.value)
+const hasFilters = computed(() => status.value !== 'In Progress' || owner.value !== 'all' || !!search.value)
 </script>
 
 <template>
@@ -80,6 +94,14 @@ const hasFilters = computed(() => status.value !== 'In Progress' || !!search.val
             @update:model-value="(v: string) => setQuery({ status: v === 'In Progress' ? undefined : v })"
           />
           <USelect
+            :model-value="owner"
+            :items="ownerItems"
+            size="sm"
+            class="w-48"
+            aria-label="Filter by owner"
+            @update:model-value="(v: string) => setQuery({ owner: v === 'all' ? undefined : v })"
+          />
+          <USelect
             :model-value="sort"
             :items="sortItems"
             size="sm"
@@ -107,7 +129,7 @@ const hasFilters = computed(() => status.value !== 'In Progress' || !!search.val
         <UButton v-if="user?.canCreateSpaces" icon="i-lucide-plus" label="Create Space" @click="createOpen = true" />
       </StatePanel>
       <StatePanel v-else-if="!filtered.length" icon="i-lucide-search-x" title="No Spaces match these filters">
-        <UButton v-if="hasFilters" color="neutral" variant="outline" label="Clear filters" @click="search = ''; setQuery({ status: undefined, q: undefined })" />
+        <UButton v-if="hasFilters" color="neutral" variant="outline" label="Clear filters" @click="search = ''; setQuery({ status: undefined, owner: undefined, q: undefined })" />
       </StatePanel>
       <div v-else class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
         <NuxtLink
@@ -131,6 +153,8 @@ const hasFilters = computed(() => status.value !== 'In Progress' || !!search.val
               <UBadge v-else-if="space.role" color="neutral" variant="outline" size="sm" :label="space.role" />
               <UBadge v-else color="neutral" variant="outline" size="sm" icon="i-lucide-shield" label="Admin view" />
             </div>
+            <!-- Members only, like the open count: Task data is member content. -->
+            <PlanningProgress v-if="space.progress" :progress="space.progress" compact />
             <div class="mt-auto flex items-center justify-between gap-3 text-sm text-muted">
               <span class="flex min-w-0 items-center gap-2">
                 <UserAvatar :user="space.owner" size="2xs" />
