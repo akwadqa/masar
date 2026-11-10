@@ -35,6 +35,8 @@ SPACE_ICONS = (
 	"users", "shield-check", "package", "wrench", "chart-column", "graduation-cap", "heart-pulse", "plane",
 )
 SPACE_ICON_COLORS = ("blue", "violet", "teal", "green", "amber", "rose", "sky", "slate")
+# Task statuses that count as done in Space progress; Cancelled is left out entirely (see _progress).
+DONE_STATUSES = ("Completed", "Closed")
 
 # API field -> DocType field for editable Space details.
 DETAIL_FIELDS = {
@@ -50,6 +52,30 @@ DETAIL_FIELDS = {
 
 
 # --------------------------------------------------------------------------- reads
+
+
+def _progress(names: list[str]) -> dict[str, dict]:
+	"""Task progress per Space (client decision 2026-11-10): Completed and Closed Tasks out of every
+	Task except Cancelled ones, so cancelled work neither counts as done nor as remaining. `percent` is
+	None without countable Tasks: the UI shows an empty state, not 0 % (as ADR-035 for Features)."""
+	task = frappe.qb.DocType("Masar Task")
+	rows = (
+		frappe.qb.from_(task)
+		.select(task.space, task.status, Count(task.name))
+		.where(task.space.isin(names))
+		.groupby(task.space, task.status)
+		.run()
+	)
+	result = {name: {"total": 0, "completed": 0, "open": 0, "percent": None} for name in names}
+	for space, status, count in rows:
+		if status == "Cancelled":
+			continue
+		value = result[space]
+		value["total"] += count
+		value["completed" if status in DONE_STATUSES else "open"] += count
+	for value in result.values():
+		value["percent"] = round(value["completed"] * 100 / value["total"]) if value["total"] else None
+	return result
 
 
 def _summaries(names: list[str]) -> list[dict]:
@@ -74,14 +100,7 @@ def _summaries(names: list[str]) -> list[dict]:
 		.orderby(space.title)
 		.run(as_dict=True)
 	)
-	task = frappe.qb.DocType("Masar Task")
-	open_counts = dict(
-		frappe.qb.from_(task)
-		.select(task.space, Count(task.name))
-		.where(task.space.isin(names) & (task.is_completed == 0))
-		.groupby(task.space)
-		.run()
-	)
+	progress = _progress(names)
 	member = frappe.qb.DocType("Masar Space Member")
 	member_counts = dict(
 		frappe.qb.from_(member)
@@ -109,7 +128,8 @@ def _summaries(names: list[str]) -> list[dict]:
 			"role": mine.get(row.name),
 			"memberCount": member_counts.get(row.name, 0),
 			# Task counts are content: only shown for Spaces the user belongs to.
-			"openTaskCount": open_counts.get(row.name, 0) if row.name in mine else None,
+			"openTaskCount": progress[row.name]["open"] if row.name in mine else None,
+			"progress": progress[row.name] if row.name in mine else None,
 		}
 		for row in rows
 	]

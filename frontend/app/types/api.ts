@@ -55,7 +55,13 @@ export interface SpaceSummary {
   memberCount: number
   /** null for Spaces the user is not a member of (task data is member-only) */
   openTaskCount: number | null
+  /** null for Spaces the user is not a member of, like openTaskCount */
+  progress: SpaceProgress | null
 }
+
+/** Completed and Closed Tasks out of all Tasks except Cancelled ones (client decision 2026-11-10);
+ *  `percent` is null when no Task counts. Same shape as PlanningProgress, so the same bar renders it. */
+export type SpaceProgress = PlanningProgress
 
 export interface SpaceMember extends UserRef {
   role: SpaceRole
