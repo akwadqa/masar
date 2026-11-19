@@ -99,7 +99,8 @@ Batches are called Batches in both (`Masar Batch`, routes `/batches`). They were
   - Never rebase or force-push a pushed branch. Bring `master` into it with a merge; resolve conflicts in `masar/www` and `masar/public/frontend` by running `build:app` again, never by hand.
 - UI bugs are reproduced before they are fixed: run the Workspace locally (`nuxt dev`) in a Playwright browser with the API mocked through `page.route`, add temporary logs, and keep the repro script out of the commit. Production data is never used to reproduce.
 - After a merge, leave nothing behind and report it: on this PC, GitHub and the server there are no stray branches, stashes, worktrees (or their leftover folders), untracked files or temp scripts, and all three are on the same `master` commit.
-- This repository is public: never commit server hosts, user names, paths or the names of other sites. Environment details live in each developer's private Claude memory and skills.
+- This repository is public: never commit server hosts, user names, paths or the names of other sites. Environment details (instance, host, bench path, site, users) live in the private Akwad skills `akwad-environment` and `akwad-deploy`.
+- Procedures are project skills in `.claude/skills/`, so cloud sessions load them too: `masar-deploy` (verify, deploy for evaluation, evaluation rounds, merge, server sync, cleanup audit, revert) and `masar-move-tasks` (the approved data fix for moving Tasks between Spaces). They use placeholders for everything server-specific.
 - Client decisions are final once given: record them with their date in `specs/` or `docs/` and in code comments, and update any document they contradict.
 
 ## Project rules (from `docs/10-development-standards.md`)
